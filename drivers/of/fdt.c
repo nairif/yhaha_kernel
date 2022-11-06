@@ -1207,8 +1207,8 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
 	if (rng_seed && l > 0) {
 		add_bootloader_randomness(rng_seed, l);
 
-		/* try to clear seed so it won't be found. */
-		fdt_nop_property(initial_boot_params, node, "rng-seed");
+		/* NEVER try to clear the rng seeds */
+		/* fdt_nop_property(initial_boot_params, node, "rng-seed"); */
 	}
 
 	/* break now */
