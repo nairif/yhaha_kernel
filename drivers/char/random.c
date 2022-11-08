@@ -435,6 +435,34 @@ static void crng_make_state(u32 chacha_state[CHACHA20_BLOCK_SIZE / sizeof(u32)],
 	local_irq_restore(flags);
 }
 
+/*
+ * This function is for crng_init == 0 only. It loads entropy directly
+ * into the crng's key, without going through the input pool. It is,
+ * generally speaking, not very safe, but we use this only at early
+ * boot time when it's better to have something there rather than
+ * nothing.
+ */
+static void crng_pre_init_inject(const void *input, size_t len)
+{
+	static int crng_init_cnt = 0;
+	struct blake2s_state hash;
+	unsigned long flags;
+
+	blake2s_init(&hash, sizeof(base_crng.key));
+
+	spin_lock_irqsave(&base_crng.lock, flags);
+	if (crng_init != 0) {
+		spin_unlock_irqrestore(&base_crng.lock, flags);
+		return;
+	}
+
+	blake2s_update(&hash, base_crng.key, sizeof(base_crng.key));
+	blake2s_update(&hash, input, len);
+	blake2s_final(&hash, base_crng.key);
+
+	spin_unlock_irqrestore(&base_crng.lock, flags);
+}
+
 static void _get_random_bytes(void *buf, size_t nbytes)
 {
 	u32 chacha_state[CHACHA20_BLOCK_SIZE / sizeof(u32)];
@@ -998,6 +1026,9 @@ void add_device_randomness(const void *buf, size_t size)
 	unsigned long entropy = random_get_entropy();
 	unsigned long flags;
 
+	if (crng_init == 0 && size)
+		crng_pre_init_inject(buf, size);
+
 	spin_lock_irqsave(&input_pool.lock, flags);
 	_mix_pool_bytes(&entropy, sizeof(entropy));
 	_mix_pool_bytes(buf, size);
@@ -1120,7 +1151,7 @@ void add_hwgenerator_randomness(const void *buffer, size_t count,
 	 * CRNG_RESEED_INTERVAL has elapsed.
 	 */
 	wait_event_interruptible_timeout(random_write_wait,
-			kthread_should_stop() ||
+			!system_wq || kthread_should_stop() ||
 			input_pool.entropy_count < POOL_MIN_BITS,
 			CRNG_RESEED_INTERVAL);
 	mix_pool_bytes(buffer, count);
