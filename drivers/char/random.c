@@ -1119,7 +1119,7 @@ void add_hwgenerator_randomness(const void *buffer, size_t count,
 	 * Throttle writing to once every CRNG_RESEED_INTERVAL, unless
 	 * we're not yet initialized.
 	 */
-	if (!kthread_should_stop() && crng_ready())
+	if ((!system_wq || !kthread_should_stop()) && crng_ready())
 		schedule_timeout_interruptible(CRNG_RESEED_INTERVAL);
 }
 EXPORT_SYMBOL_GPL(add_hwgenerator_randomness);
