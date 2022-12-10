@@ -89,6 +89,7 @@ static void orientation_change(void *device_data);
 static void doze_mode_change(void *device_data);
 static void wireless_charging(void *device_data);
 static void game_enhancer_grip_rejection(void *device_data);
+static void jitter_filter_mode(void *device_data);
 static void not_support_cmd(void *device_data);
 
 static void sec_ts_print_frame(struct sec_ts_data *ts, short *min, short *max);
@@ -170,6 +171,7 @@ static struct sec_cmd sec_cmds[] = {
 	{SEC_CMD("doze_mode_change", doze_mode_change),},
 	{SEC_CMD("wireless_charging", wireless_charging),},
 	{SEC_CMD("game_enhancer_grip_rejection", game_enhancer_grip_rejection),},
+	{SEC_CMD("jitter_filter_mode", jitter_filter_mode),},
 	{SEC_CMD("not_support_cmd", not_support_cmd),},
 };
 
@@ -3521,7 +3523,7 @@ static void run_trx_short_test_all(void *device_data)
 	}
 
 	memset(rBuff, 0x00, size);
-	memset(data, 0x00, 24);
+	memset(data, 0x00, sizeof(data));
 
 	input_info(true, &ts->client->dev, "%s: Read self test result\n", __func__);
 
@@ -4839,37 +4841,30 @@ static int set_sidetouch(void *device_data, int status)
 {
 	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
 	struct sec_ts_data *ts = container_of(sec, struct sec_ts_data, sec);
-	int ret = 0;
+	int ret, ret_lock = 0;
 	u8 side_expected = (u8)status;
 	u8 side_current = 0;
-	u8 doze_mode = 0;
 
 	sec_cmd_set_default_result(sec);
 
 	if (sec_ts_get_pw_status()) {
 		input_err(true, &ts->client->dev, "%s: POWER off!\n", __func__);
-		goto err_out;
+		return ret;
 	}
 
-	ret = sec_ts_pw_lock(ts, INCELL_DISPLAY_POWER_LOCK);
-	if (ret != INCELL_OK) {
-		input_err(true, &ts->client->dev, "%s: power lock failed ret:%d\n", __func__, ret);
-		goto err_out;
+	ret_lock = sec_ts_pw_lock(ts, INCELL_DISPLAY_POWER_LOCK);
+	if (ret_lock != INCELL_OK) {
+		input_err(true, &ts->client->dev, "%s: power lock failed ret:%d\n", __func__, ret_lock);
+		return ret_lock;
 	}
 
-	ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_ENABLE_DOZE, &doze_mode, 1);
-	if (ret < 0) {
-		input_err(true, &ts->client->dev, "%s: error read doze command\n", __func__);
-		goto err_out;
-	}
-
-	if (doze_mode == 1 || ts->plat_data->wireless_charging.status)
+	if (ts->plat_data->wireless_charging.status)
 		side_expected = OFF;
 
 	ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_ENABLE_SIDETOUCH, &side_current, 1);
 	if (ret < 0) {
 		input_err(true, &ts->client->dev, "%s: error read side touch command\n", __func__);
-		goto err_out;
+		goto unlock;
 	}
 	side_current = CONVERT_SIDE_ENABLE_MODE_FOR_READ(side_current);
 
@@ -4878,7 +4873,7 @@ static int set_sidetouch(void *device_data, int status)
 		ret = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_ENABLE_SIDETOUCH, &side_expected, 1);
 		if (ret < 0) {
 			input_err(true, &ts->client->dev, "%s: error write side touch command\n", __func__);
-			goto err_out;
+			goto unlock;
 		}
 
 		sec_ts_delay(10);
@@ -4886,7 +4881,7 @@ static int set_sidetouch(void *device_data, int status)
 		ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_ENABLE_SIDETOUCH, &side_current, 1);
 		if (ret < 0) {
 			input_err(true, &ts->client->dev, "%s: error read side touch command\n", __func__);
-			goto err_out;
+			goto unlock;
 		}
 		side_current = CONVERT_SIDE_ENABLE_MODE_FOR_READ(side_current);
 		input_info(true, &ts->client->dev, "%s: sidetouch is now %s\n", __func__,
@@ -4894,13 +4889,13 @@ static int set_sidetouch(void *device_data, int status)
 				(side_current == 2 ? "LEFT_ON" : "OFF")));
 	}
 
-	ret = sec_ts_pw_lock(ts, INCELL_DISPLAY_POWER_UNLOCK);
-	if (ret != INCELL_OK) {
-		input_err(true, &ts->client->dev, "%s: power unlock failed ret:%d\n", __func__, ret);
-		goto err_out;
+unlock:
+	ret_lock = sec_ts_pw_lock(ts, INCELL_DISPLAY_POWER_UNLOCK);
+	if (ret_lock != INCELL_OK) {
+		input_err(true, &ts->client->dev, "%s: power unlock failed ret:%d\n", __func__, ret_lock);
+		return ret_lock;
 	}
 
-err_out:
 	return ret;
 }
 
@@ -5125,14 +5120,62 @@ err_out:
 	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 }
 
+static int write_and_verify(struct sec_ts_data *ts, int param, u8 value)
+{
+	int retry = 3;
+	u8 check;
+	int rc = ts->sec_ts_i2c_write(ts, param, &value, 1);
+
+	if (rc < 0) {
+		input_err(true, &ts->client->dev,
+				"%s: error writing param %d value %u\n", __func__,
+				param, value);
+		return rc;
+	}
+
+	while (retry--) {
+		sec_ts_delay(10);
+		rc = ts->sec_ts_i2c_read(ts, param, &check, 1);
+		if (rc < 0) {
+			input_err(true, &ts->client->dev,
+					"%s: error reading param %d\n", __func__, param);
+			return rc;
+		}
+		if (value == check)
+			return 0;
+	}
+	input_err(true, &ts->client->dev,
+			"%s: failed to set param %d, value %u\n", __func__,
+			param, value);
+	return -1;
+}
+
+int set_report_rate(struct sec_ts_data *ts, int mode)
+{
+	int ret = 0;
+	u8 doze_status = 0x00;
+	u8 report_rate_status = 0x00;
+
+	if ((DOZE_MODE & mode) == DOZE_MODE)
+		doze_status = 0x01;
+
+	if ((REPORT_RATE & mode) == REPORT_RATE)
+		report_rate_status = 0x01;
+
+	ret = write_and_verify(ts, SEC_TS_CMD_ENABLE_DOZE, doze_status);
+	if (ret)
+		return ret;
+	ret = write_and_verify(ts, SEC_TS_CMD_REPORT_RATE_CONTROL,
+			report_rate_status);
+	return ret;
+}
+
 static void doze_mode_change(void *device_data)
 {
 	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
 	struct sec_ts_data *ts = container_of(sec, struct sec_ts_data, sec);
 	char buff[SEC_CMD_STR_LEN] = { 0 };
-	u8 doze_mode_on = 0x01;
-	u8 doze_mode_off = 0x00;
-	u8 tRead;
+	u8 doze_mode;
 	int ret = 0;
 
 	sec_cmd_set_default_result(sec);
@@ -5141,44 +5184,49 @@ static void doze_mode_change(void *device_data)
 		input_err(true, &ts->client->dev, "%s: POWER off!\n", __func__);
 		goto err_out;
 	}
-	if (sec->cmd_param[0] < 0 || sec->cmd_param[0] > 2) {
-		input_err(true, &ts->client->dev, "%s: param out of range\n", __func__);
-		goto err_out;
-	}
 
-	if (sec->cmd_param[0] == 0)
-		ret = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_ENABLE_DOZE, &doze_mode_off, 1);
-	else if (sec->cmd_param[0] == 2)
-		ret = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_ENABLE_DOZE, &doze_mode_on, 1);
-
-	if (ret < 0) {
-		input_err(true, &ts->client->dev, "%s: error sending doze command\n", __func__);
-		goto err_out;
-	}
-
-	sec_ts_delay(10);
-
-	ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_ENABLE_DOZE, &tRead, 1);
-	if (ret < 0) {
-		input_err(true, &ts->client->dev, "%s: error read doze command\n", __func__);
-		goto err_out;
-	}
-
-	input_info(true, &ts->client->dev, "%s: Doze mode is now %d\n",
-			__func__, tRead);
-
-	if (sec->cmd_param[0] == 1) {
-		if (ts->side_enable != OFF)
-			ret = set_sidetouch(device_data, OFF);
-	} else if (sec->cmd_param[0] == 2) {
-		if (ts->side_enable != OFF)
-			ret = set_sidetouch(device_data, OFF);
+	if (ts->plat_data->img_version_of_ic[0] == 0x17) {
+		if (sec->cmd_param[0] < 0 || sec->cmd_param[0] > 2) {
+			input_err(true, &ts->client->dev, "%s: param out of range\n", __func__);
+			goto err_out;
+		}
+		doze_mode = sec->cmd_param[0] == 0 ? 0 : 1;
+		ret = write_and_verify(ts, SEC_TS_CMD_ENABLE_DOZE, doze_mode);
+		if (ret)
+			goto err_out;
+		input_info(true, &ts->client->dev, "%s: Doze mode is now %d\n",
+				__func__, doze_mode);
 	} else {
-		if (ts->side_enable != OFF)
-			ret = set_sidetouch(device_data, ts->side_enable);
+		u8 rate;
+
+		if (sec->cmd_param[0] < 1 || sec->cmd_param[0] > 3) {
+			input_err(true, &ts->client->dev, "%s: param out of range\n", __func__);
+			goto err_out;
+		}
+
+		switch (sec->cmd_param[0]) {
+		case 1:
+			doze_mode = 1; rate = 0;
+			break;
+		case 2:
+			doze_mode = 1; rate = 1;
+			break;
+		case 3:
+			doze_mode = 0; rate = 1;
+			break;
+		}
+
+		ret = write_and_verify(ts, SEC_TS_CMD_ENABLE_DOZE, doze_mode);
+		if (ret)
+			goto err_out;
+		input_info(true, &ts->client->dev, "%s: Doze mode is now %d\n",
+					__func__, doze_mode);
+		ret = write_and_verify(ts, SEC_TS_CMD_REPORT_RATE_CONTROL, rate);
+		if (ret)
+			goto err_out;
+		input_info(true, &ts->client->dev, "%s: report rate control mode is now %d\n",
+				__func__, rate);
 	}
-	if (ret < 0)
-		goto err_out;
 
 	snprintf(buff, sizeof(buff), "%s", "OK");
 	sec->cmd_state = SEC_CMD_STATUS_OK;
@@ -5254,6 +5302,116 @@ static void game_enhancer_grip_rejection(void *device_data)
 		else
 			ts->report_rejected_event_flag = 1;
 	}
+
+	sec_cmd_set_default_result(sec);
+
+	snprintf(buff, sizeof(buff), "%s", "OK");
+	sec->cmd_state = SEC_CMD_STATUS_OK;
+	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+	return;
+
+err_out:
+	snprintf(buff, sizeof(buff), "%s", "NG");
+	sec->cmd_state = SEC_CMD_STATUS_FAIL;
+	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+}
+
+static void jitter_filter_mode(void *device_data)
+{
+	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+	struct sec_ts_data *ts = container_of(sec, struct sec_ts_data, sec);
+	char buff[SEC_CMD_STR_LEN] = { 0 };
+	int ret = 0;
+	u8 blend_filter_value = 0x00;
+	u8 blend_filter_strength_1_value = 0x00;
+	u8 blend_filter_strength_2_value = 0x00;
+	u8 tRead;
+	u8 mode = 0;
+
+	if (ts->power_status == SEC_TS_STATE_POWER_OFF) {
+		input_err(true, &ts->client->dev, "%s: POWER off!\n", __func__);
+		goto err_out;
+	}
+
+	if (sec->cmd_param[0] < 0 || sec->cmd_param[0] > 2) {
+		input_err(true, &ts->client->dev, "%s: param out of range\n", __func__);
+		goto err_out;
+	}
+
+	switch (sec->cmd_param[0]) {
+		case 1:
+			mode = BLEND_FILTER;
+			break;
+		case 2:
+			mode = BLEND_FILTER | BLEND_FILTER_STRENGTH_1 | BLEND_FILTER_STRENGTH_2;
+	}
+
+	if ((mode & BLEND_FILTER) == BLEND_FILTER)
+		blend_filter_value = 0x01;
+
+	if ((mode & BLEND_FILTER_STRENGTH_1) == BLEND_FILTER_STRENGTH_1)
+		blend_filter_strength_1_value = 0x01;
+
+	if ((mode & BLEND_FILTER_STRENGTH_2) == BLEND_FILTER_STRENGTH_2)
+		blend_filter_strength_2_value = 0x01;
+
+	ret = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_ENABLE_BLEND_FILTER,
+		&blend_filter_value, 1);
+
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: error sending ENABLE_BLEND_FILTER cmd\n",
+			__func__);
+		goto err_out;
+	}
+
+	ret = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_SET_BLEND_FILTER_STRENGTH_1,
+		&blend_filter_strength_1_value, 1);
+
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: error sending SET_BLEND_FILTER_STRENGTH_1 cmd\n",
+			__func__);
+		goto err_out;
+	}
+
+	ret = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_SET_BLEND_FILTER_STRENGTH_2,
+		&blend_filter_strength_2_value, 1);
+
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: error sending SET_BLEND_FILTER_STRENGTH_2 cmd\n",
+			__func__);
+		goto err_out;
+	}
+
+	ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_ENABLE_BLEND_FILTER, &tRead, 1);
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: error read ENABLE_BLEND_FILTER cmd\n",
+			__func__);
+		goto err_out;
+	}
+
+	input_info(true, &ts->client->dev, "%s: blend filter mode is now %d\n",
+			__func__, tRead);
+
+	ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_SET_BLEND_FILTER_STRENGTH_1, &tRead, 1);
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: error read SET_BLEND_FILTER_STRENGTH_1 cmd\n",
+			__func__);
+		goto err_out;
+	}
+
+	input_info(true, &ts->client->dev, "%s: BLEND_FILTER_STRENGTH_1 is now %d\n",
+			__func__, tRead);
+
+	ret = ts->sec_ts_i2c_read(ts, SEC_TS_CMD_SET_BLEND_FILTER_STRENGTH_2, &tRead, 1);
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: error read SET_BLEND_FILTER_STRENGTH_2 cmd\n",
+			__func__);
+		goto err_out;
+	}
+
+	input_info(true, &ts->client->dev, "%s: BLEND_FILTER_STRENGTH_2 is now %d\n",
+			__func__, tRead);
+
 
 	sec_cmd_set_default_result(sec);
 

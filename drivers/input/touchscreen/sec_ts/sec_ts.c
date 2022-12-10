@@ -1225,15 +1225,105 @@ void sec_ts_set_grip_type(struct sec_ts_data *ts, u8 set_type)
 
 }
 
+#if 0
+/* for debugging------------------------------------------------------------------------*/
+
+static int sec_ts_pinctrl_configure(struct sec_ts_data *ts, bool enable)
+{
+	struct pinctrl_state *state;
+
+	input_info(true, &ts->client->dev, "%s: %s\n", __func__, enable ? "ACTIVE" : "SUSPEND");
+
+	if (enable) {
+		state = pinctrl_lookup_state(ts->plat_data->pinctrl, "on_state");
+		if (IS_ERR(ts->plat_data->pinctrl))
+			input_err(true, &ts->client->dev, "%s: could not get active pinstate\n", __func__);
+	} else {
+		state = pinctrl_lookup_state(ts->plat_data->pinctrl, "off_state");
+		if (IS_ERR(ts->plat_data->pinctrl))
+			input_err(true, &ts->client->dev, "%s: could not get suspend pinstate\n", __func__);
+	}
+
+	if (!IS_ERR_OR_NULL(state))
+		return pinctrl_select_state(ts->plat_data->pinctrl, state);
+
+	return 0;
+
+}
+#endif
+#if 0
+int sec_ts_power(void *data, bool on)
+{
+	struct sec_ts_data *ts = (struct sec_ts_data *)data;
+	const struct sec_ts_plat_data *pdata = ts->plat_data;
+	struct regulator *regulator_dvdd = NULL;
+	struct regulator *regulator_avdd = NULL;
+	static bool enabled;
+	int ret = 0;
+
+	if (enabled == on)
+		return ret;
+
+	regulator_dvdd = regulator_get(&ts->client->dev, "tsp_io");
+	if (IS_ERR_OR_NULL(regulator_dvdd)) {
+		input_err(true, &ts->client->dev, "%s: Failed to get %s regulator.\n",
+				 __func__, pdata->regulator_dvdd);
+		goto error;
+	}
+
+	regulator_avdd = regulator_get(&ts->client->dev, "tsp_avdd");
+	if (IS_ERR_OR_NULL(regulator_avdd)) {
+		input_err(true, &ts->client->dev, "%s: Failed to get %s regulator.\n",
+			 __func__, pdata->regulator_avdd);
+		goto error;
+	}
+
+	if (on) {
+		ret = regulator_enable(regulator_dvdd);
+		if (ret) {
+			input_err(true, &ts->client->dev, "%s: Failed to enable avdd: %d\n", __func__, ret);
+			goto out;
+		}
+
+		sec_ts_delay(1);
+
+		ret = regulator_enable(regulator_avdd);
+		if (ret) {
+			input_err(true, &ts->client->dev, "%s: Failed to enable vdd: %d\n", __func__, ret);
+			goto out;
+		}
+	} else {
+		regulator_disable(regulator_avdd);
+		sec_ts_delay(4);
+		regulator_disable(regulator_dvdd);
+	}
+
+	enabled = on;
+
+out:
+	input_err(true, &ts->client->dev, "%s: %s: avdd:%s, dvdd:%s\n", __func__, on ? "on" : "off",
+			regulator_is_enabled(regulator_avdd) ? "on" : "off",
+			regulator_is_enabled(regulator_dvdd) ? "on" : "off");
+
+error:
+	regulator_put(regulator_dvdd);
+	regulator_put(regulator_avdd);
+
+	return ret;
+}
+#endif
+
 static int sec_ts_parse_dt(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 	struct sec_ts_plat_data *pdata = dev->platform_data;
 	struct device_node *np = dev->of_node;
+	struct property *prop;
 	u32 coords[2];
 	int ret = 0;
 	int count = 0;
 	int lcdtype = 0;
+	int32_t len = 0;
 
 	pdata->irq_gpio = of_get_named_gpio(np, "sec,irq_gpio", 0);
 	if (gpio_is_valid(pdata->irq_gpio)) {
@@ -1693,8 +1783,9 @@ out:
 static void sec_ts_watchdog_func(struct work_struct *work_watchdog)
 {
 	struct sec_ts_data *ts = container_of(to_delayed_work(work_watchdog), struct sec_ts_data, work_watchdog);
+	struct sec_ts_plat_data *pdata = ts->plat_data;
 	u8 mode = 0;
-	u8 deviceId[3] = { 0 };
+	u8 deviceId[DEVICE_ID_WD_MAX] = { 0 };
 	int ret = 0;
 
 	if (ts->power_status == SEC_TS_STATE_POWER_OFF || (ts->power_status == SEC_TS_STATE_LPM && !ts->lowpower_mode)) {
@@ -2252,6 +2343,17 @@ static int sec_ts_feature_settings(struct sec_ts_data *ts)
 		input_err(true, &ts->client->dev,
 				"%s: Failed to set doze timeout command\n", __func__);
 		goto err;
+	}
+
+	/* report rate for pdx206 */
+	if (ts->plat_data->img_version_of_ic[0] == 0x24) {
+		input_info(true, &ts->client->dev, "%s, Reset touch report rate\n", __func__);
+		ret = set_report_rate(ts, DOZE_MODE);
+		if (ret < 0) {
+			input_err(true, &ts->client->dev,
+				"%s: Failed to set report rate\n", __func__);
+			goto err;
+		}
 	}
 
 	input_info(true, &ts->client->dev, "%s: cover:%d, glove:%d, side:%d, stamina:%d, doze timeout:%d\n",

@@ -158,6 +158,10 @@
 #define SEC_TS_CMD_ENABLE_SIDETOUCH		0x42
 #define SEC_TS_CMD_ENABLE_DOZE			0x44
 #define SEC_TS_CMD_ERASE_FLASH			0x45
+#define SEC_TS_CMD_REPORT_RATE_CONTROL		0x48
+#define SEC_TS_CMD_ENABLE_BLEND_FILTER		0x49
+#define SEC_TS_CMD_SET_BLEND_FILTER_STRENGTH_1	0x4B
+#define SEC_TS_CMD_SET_BLEND_FILTER_STRENGTH_2	0x4E
 #define SEC_TS_READ_ID				0x52
 #define SEC_TS_READ_BOOT_STATUS			0x55
 #define SEC_TS_CMD_ENTER_FW_MODE		0x57
@@ -326,6 +330,13 @@
 
 #define AOD_MODE_DOUBLE_TAP	2
 #define MAX_PRESSURE	255
+
+#define DOZE_MODE	1
+#define REPORT_RATE	2
+
+#define BLEND_FILTER	1
+#define BLEND_FILTER_STRENGTH_1	2
+#define BLEND_FILTER_STRENGTH_2	4
 
 /*
  * sec Log
@@ -975,6 +986,7 @@ void sec_ts_run_rawdata_all(struct sec_ts_data *ts, bool full_read);
 void sec_ts_reinit(struct sec_ts_data *ts);
 
 void sec_ts_set_irq(struct sec_ts_data *ts, bool enable);
+int set_report_rate(struct sec_ts_data *ts, int mode);
 
 #if (1)//!defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 
