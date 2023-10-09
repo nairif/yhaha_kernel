@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
-/*
- * Copyright (c) 2012-2018, 2020-2021, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, 2020, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/clk.h>
@@ -26,7 +33,6 @@
 #include <linux/time.h>
 #include <linux/hashtable.h>
 #include <linux/jhash.h>
-#include <linux/ipa.h>
 #include "ipa_i.h"
 #include "../ipa_rm_i.h"
 
@@ -361,7 +367,7 @@ static int ipa2_active_clients_log_init(void)
 	hash_init(ipa_ctx->ipa2_active_clients_logging.htable);
 	atomic_notifier_chain_register(&panic_notifier_list,
 			&ipa2_active_clients_panic_blk);
-	ipa_ctx->ipa2_active_clients_logging.log_rdy = true;
+	ipa_ctx->ipa2_active_clients_logging.log_rdy = 1;
 
 	return 0;
 
@@ -380,7 +386,7 @@ void ipa2_active_clients_log_clear(void)
 
 static void ipa2_active_clients_log_destroy(void)
 {
-	ipa_ctx->ipa2_active_clients_logging.log_rdy = false;
+	ipa_ctx->ipa2_active_clients_logging.log_rdy = 0;
 	kfree(active_clients_table_buf);
 	active_clients_table_buf = NULL;
 	kfree(ipa_ctx->ipa2_active_clients_logging.log_buffer[0]);
@@ -389,30 +395,44 @@ static void ipa2_active_clients_log_destroy(void)
 			IPA2_ACTIVE_CLIENTS_LOG_BUFFER_SIZE_LINES - 1;
 }
 
+enum ipa_smmu_cb_type {
+	IPA_SMMU_CB_AP,
+	IPA_SMMU_CB_WLAN,
+	IPA_SMMU_CB_UC,
+	IPA_SMMU_CB_MAX
+
+};
+
 static struct ipa_smmu_cb_ctx smmu_cb[IPA_SMMU_CB_MAX];
-
-struct iommu_domain *ipa2_get_smmu_domain_by_type(enum ipa_smmu_cb_type cb_type)
-{
-	if (VALID_IPA_SMMU_CB_TYPE(cb_type) && smmu_cb[cb_type].valid)
-		return smmu_cb[cb_type].iommu_domain;
-
-	IPAERR("cb_type(%d) not valid\n", cb_type);
-	return NULL;
-}
 
 struct iommu_domain *ipa2_get_smmu_domain(void)
 {
-	return ipa2_get_smmu_domain_by_type(IPA_SMMU_CB_AP);
+	if (smmu_cb[IPA_SMMU_CB_AP].valid)
+		return smmu_cb[IPA_SMMU_CB_AP].mapping->domain;
+
+	IPAERR("CB not valid\n");
+
+	return NULL;
 }
 
 struct iommu_domain *ipa2_get_uc_smmu_domain(void)
 {
-	return ipa2_get_smmu_domain_by_type(IPA_SMMU_CB_UC);
+	if (smmu_cb[IPA_SMMU_CB_UC].valid)
+		return smmu_cb[IPA_SMMU_CB_UC].mapping->domain;
+
+	IPAERR("CB not valid\n");
+
+	return NULL;
 }
 
 struct iommu_domain *ipa2_get_wlan_smmu_domain(void)
 {
-	return ipa2_get_smmu_domain_by_type(IPA_SMMU_CB_WLAN);
+	if (smmu_cb[IPA_SMMU_CB_WLAN].valid)
+		return smmu_cb[IPA_SMMU_CB_WLAN].iommu;
+
+	IPAERR("CB not valid\n");
+
+	return NULL;
 }
 
 struct device *ipa2_get_dma_dev(void)
@@ -425,9 +445,9 @@ struct device *ipa2_get_dma_dev(void)
  *
  * Return value: pointer to smmu context address
  */
-struct ipa_smmu_cb_ctx *ipa2_get_smmu_ctx(enum ipa_smmu_cb_type cb_type)
+struct ipa_smmu_cb_ctx *ipa2_get_smmu_ctx(void)
 {
-	return &smmu_cb[cb_type];
+	return &smmu_cb[IPA_SMMU_CB_AP];
 }
 
 
@@ -449,47 +469,6 @@ struct ipa_smmu_cb_ctx *ipa2_get_wlan_smmu_ctx(void)
 struct ipa_smmu_cb_ctx *ipa2_get_uc_smmu_ctx(void)
 {
 	return &smmu_cb[IPA_SMMU_CB_UC];
-}
-
-/**
- * ipa2_get_smmu_params()- Return the ipa2 smmu related params.
- */
-int ipa2_get_smmu_params(struct ipa_smmu_in_params *in,
-	struct ipa_smmu_out_params *out)
-{
-	bool is_smmu_enable = 0;
-
-	if (out == NULL || in == NULL) {
-		IPAERR("bad parms for Client SMMU out params\n");
-		return -EINVAL;
-	}
-
-	if (!ipa_ctx) {
-		IPAERR("IPA not yet initialized\n");
-		return -EINVAL;
-	}
-
-	/* TODO: Implement per-client s1-bypass check */
-	switch (in->smmu_client) {
-	case IPA_SMMU_WLAN_CLIENT:
-		is_smmu_enable = !ipa_ctx->smmu_s1_bypass;
-		break;
-	default:
-		/*
-		 * When per-client s1-byp check implemented, set this to 0
-		 * and return a not nice -EINVAL.
-		 */
-		is_smmu_enable = !ipa_ctx->smmu_s1_bypass;
-		IPAERR("Trying to get illegal clients SMMU status");
-		//return -EINVAL;
-	}
-
-	IPADBG("IPA: Returning smmu %s\n", is_smmu_enable ?
-					   "enabled" : "disabled");
-
-	out->smmu_enable = is_smmu_enable;
-
-	return 0;
 }
 
 static int ipa_open(struct inode *inode, struct file *filp)
@@ -695,12 +674,16 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_nat_dma_cmd) +
 		   pre_entry * sizeof(struct ipa_ioc_nat_dma_one);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
 			break;
 		}
 
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
+			break;
+		}
 		/* add check in case user-space module compromised */
 		if (unlikely(((struct ipa_ioc_nat_dma_cmd *)param)->entries
 			!= pre_entry)) {
@@ -739,9 +722,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_add_hdr) +
 		   pre_entry * sizeof(struct ipa_hdr_add);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -775,9 +762,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_del_hdr) +
 		   pre_entry * sizeof(struct ipa_hdr_del);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -811,9 +802,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_add_rt_rule) +
 		   pre_entry * sizeof(struct ipa_rt_rule_add);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -848,9 +843,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_mdfy_rt_rule) +
 		   pre_entry * sizeof(struct ipa_rt_rule_mdfy);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -884,9 +883,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_del_rt_rule) +
 		   pre_entry * sizeof(struct ipa_rt_rule_del);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -919,9 +922,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_add_flt_rule) +
 		   pre_entry * sizeof(struct ipa_flt_rule_add);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -956,9 +963,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_del_flt_rule) +
 		   pre_entry * sizeof(struct ipa_flt_rule_del);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -992,9 +1003,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_mdfy_flt_rule) +
 		   pre_entry * sizeof(struct ipa_flt_rule_mdfy);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1125,9 +1140,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			header)->num_tx_props;
 		pyld_sz = sz + pre_entry *
 			sizeof(struct ipa_ioc_tx_intf_prop);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1167,9 +1186,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			header)->num_rx_props;
 		pyld_sz = sz + pre_entry *
 			sizeof(struct ipa_ioc_rx_intf_prop);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1208,9 +1231,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			header)->num_ext_props;
 		pyld_sz = sz + pre_entry *
 			sizeof(struct ipa_ioc_ext_intf_prop);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1242,9 +1269,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		   ((struct ipa_msg_meta *)header)->msg_len;
 		pyld_sz = sizeof(struct ipa_msg_meta) +
 		   pre_entry;
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1378,9 +1409,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_add_hdr_proc_ctx) +
 		   pre_entry * sizeof(struct ipa_hdr_proc_ctx_add);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1413,9 +1448,13 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		pyld_sz =
 		   sizeof(struct ipa_ioc_del_hdr_proc_ctx) +
 		   pre_entry * sizeof(struct ipa_hdr_proc_ctx_del);
-		param = memdup_user((const void __user *)arg, pyld_sz);
-		if (IS_ERR(param)) {
+		param = kzalloc(pyld_sz, GFP_KERNEL);
+		if (!param) {
 			retval = -ENOMEM;
+			break;
+		}
+		if (copy_from_user(param, (const void __user *)arg, pyld_sz)) {
+			retval = -EFAULT;
 			break;
 		}
 		/* add check in case user-space module compromised */
@@ -1441,7 +1480,7 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case IPA_IOC_GET_HW_VERSION:
 		pyld_sz = sizeof(enum ipa_hw_type);
-		param = kmemdup(&ipa_ctx->ipa_hw_type, pyld_sz, GFP_KERNEL);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -1472,8 +1511,7 @@ static long ipa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		IPA_ACTIVE_CLIENTS_DEC_SIMPLE();
 		return -ENOTTY;
 	}
-	if (!IS_ERR(param))
-		kfree(param);
+	kfree(param);
 
 	IPA_ACTIVE_CLIENTS_DEC_SIMPLE();
 
@@ -1620,12 +1658,14 @@ static int ipa_init_smem_region(int memory_region_size,
 	memset(&mem, 0, sizeof(mem));
 
 	mem.size = memory_region_size;
-	mem.base = dma_zalloc_coherent(ipa_ctx->pdev, mem.size,
+	mem.base = dma_alloc_coherent(ipa_ctx->pdev, mem.size,
 		&mem.phys_base, GFP_KERNEL);
 	if (!mem.base) {
 		IPAERR("failed to alloc DMA buff of size %d\n", mem.size);
 		return -ENOMEM;
 	}
+
+	memset(mem.base, 0, mem.size);
 
 	cmd = kzalloc(sizeof(*cmd),
 		flag);
@@ -1643,7 +1683,6 @@ static int ipa_init_smem_region(int memory_region_size,
 	desc.pyld = cmd;
 	desc.len = sizeof(*cmd);
 	desc.type = IPA_IMM_CMD_DESC;
-
 
 	rc = ipa_send_cmd(1, &desc);
 	if (rc) {
@@ -1674,14 +1713,13 @@ int ipa_init_q6_smem(void)
 
 	IPA_ACTIVE_CLIENTS_INC_SIMPLE();
 
-	if (ipa_ctx->ipa_hw_type == IPA_HW_v2_0) {
+	if (ipa_ctx->ipa_hw_type == IPA_HW_v2_0)
 		rc = ipa_init_smem_region(IPA_MEM_PART(modem_size) -
 			IPA_MEM_RAM_MODEM_NETWORK_STATS_SIZE,
 			IPA_MEM_PART(modem_ofst));
-	} else {
+	else
 		rc = ipa_init_smem_region(IPA_MEM_PART(modem_size),
 			IPA_MEM_PART(modem_ofst));
-	}
 
 	if (rc) {
 		IPAERR("failed to initialize Modem RAM memory\n");
@@ -2193,12 +2231,13 @@ int _ipa_init_sram_v2(void)
 	iounmap(ipa_sram_mmio);
 
 	mem.size = IPA_STATUS_CLEAR_SIZE;
-	mem.base = dma_zalloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
+	mem.base = dma_alloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
 			GFP_KERNEL);
 	if (!mem.base) {
 		IPAERR("fail to alloc DMA buff of size %d\n", mem.size);
 		return -ENOMEM;
 	}
+	memset(mem.base, 0, mem.size);
 
 	cmd = kzalloc(sizeof(*cmd), flag);
 	if (cmd == NULL) {
@@ -2315,12 +2354,13 @@ int _ipa_init_hdr_v2(void)
 	int rc = 0;
 
 	mem.size = IPA_MEM_PART(modem_hdr_size) + IPA_MEM_PART(apps_hdr_size);
-	mem.base = dma_zalloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
+	mem.base = dma_alloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
 			GFP_KERNEL);
 	if (!mem.base) {
 		IPAERR("fail to alloc DMA buff of size %d\n", mem.size);
 		return -ENOMEM;
 	}
+	memset(mem.base, 0, mem.size);
 
 	cmd = kzalloc(sizeof(*cmd), flag);
 	if (cmd == NULL) {
@@ -2360,12 +2400,13 @@ int _ipa_init_hdr_v2_5(void)
 	gfp_t flag = GFP_KERNEL | (ipa_ctx->use_dma_zone ? GFP_DMA : 0);
 
 	mem.size = IPA_MEM_PART(modem_hdr_size) + IPA_MEM_PART(apps_hdr_size);
-	mem.base = dma_zalloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
+	mem.base = dma_alloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
 		GFP_KERNEL);
 	if (!mem.base) {
 		IPAERR("fail to alloc DMA buff of size %d\n", mem.size);
 		return -ENOMEM;
 	}
+	memset(mem.base, 0, mem.size);
 
 	cmd = kzalloc(sizeof(*cmd), flag);
 	if (cmd == NULL) {
@@ -2399,12 +2440,13 @@ int _ipa_init_hdr_v2_5(void)
 
 	mem.size = IPA_MEM_PART(modem_hdr_proc_ctx_size) +
 		IPA_MEM_PART(apps_hdr_proc_ctx_size);
-	mem.base = dma_zalloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
+	mem.base = dma_alloc_coherent(ipa_ctx->pdev, mem.size, &mem.phys_base,
 		GFP_KERNEL);
 	if (!mem.base) {
 		IPAERR("fail to alloc DMA buff of size %d\n", mem.size);
 		return -ENOMEM;
 	}
+	memset(mem.base, 0, mem.size);
 	memset(&desc, 0, sizeof(desc));
 
 	dma_cmd = kzalloc(sizeof(*dma_cmd), flag);
@@ -3424,7 +3466,7 @@ void ipa_inc_acquire_wakelock(enum ipa_wakelock_ref_client ref_client)
 		ref_client, ipa_ctx->wakelock_ref_cnt.cnt);
 	ipa_ctx->wakelock_ref_cnt.cnt |= (1 << ref_client);
 	if (ipa_ctx->wakelock_ref_cnt.cnt)
-		__pm_stay_awake(ipa_ctx->w_lock);
+		__pm_stay_awake(&ipa_ctx->w_lock);
 	IPADBG_LOW("active wakelock ref cnt = %d client enum %d\n",
 		ipa_ctx->wakelock_ref_cnt.cnt, ref_client);
 	spin_unlock_irqrestore(&ipa_ctx->wakelock_ref_cnt.spinlock, flags);
@@ -3449,7 +3491,7 @@ void ipa_dec_release_wakelock(enum ipa_wakelock_ref_client ref_client)
 	IPADBG_LOW("active wakelock ref cnt = %d client enum %d\n",
 		ipa_ctx->wakelock_ref_cnt.cnt, ref_client);
 	if (ipa_ctx->wakelock_ref_cnt.cnt == 0)
-		__pm_relax(ipa_ctx->w_lock);
+		__pm_relax(&ipa_ctx->w_lock);
 	spin_unlock_irqrestore(&ipa_ctx->wakelock_ref_cnt.spinlock, flags);
 }
 
@@ -4038,7 +4080,7 @@ static int ipa_init(const struct ipa_plat_drv_res *resource_p,
 	bam_props.options |= SPS_BAM_NO_LOCAL_CLK_GATING;
 	if (ipa_ctx->ipa_hw_mode != IPA_HW_MODE_VIRTUAL)
 		bam_props.options |= SPS_BAM_OPT_IRQ_WAKEUP;
-	if (ipa_ctx->ipa_bam_remote_mode)
+	if (ipa_ctx->ipa_bam_remote_mode == true)
 		bam_props.manage |= SPS_BAM_MGR_DEVICE_REMOTE;
 	if (!ipa_ctx->smmu_s1_bypass)
 		bam_props.options |= SPS_BAM_SMMU_EN;
@@ -4202,7 +4244,7 @@ static int ipa_init(const struct ipa_plat_drv_res *resource_p,
 	ipa_ctx->empty_rt_tbl_mem.size = IPA_ROUTING_RULE_BYTE_SIZE;
 
 	ipa_ctx->empty_rt_tbl_mem.base =
-		dma_zalloc_coherent(ipa_ctx->pdev,
+		dma_alloc_coherent(ipa_ctx->pdev,
 				ipa_ctx->empty_rt_tbl_mem.size,
 				    &ipa_ctx->empty_rt_tbl_mem.phys_base,
 				    GFP_KERNEL);
@@ -4212,6 +4254,8 @@ static int ipa_init(const struct ipa_plat_drv_res *resource_p,
 		result = -ENOMEM;
 		goto fail_apps_pipes;
 	}
+	memset(ipa_ctx->empty_rt_tbl_mem.base, 0,
+			ipa_ctx->empty_rt_tbl_mem.size);
 	IPADBG("empty routing table was allocated in system memory");
 
 	/* setup the A5-IPA pipes */
@@ -4271,15 +4315,10 @@ static int ipa_init(const struct ipa_plat_drv_res *resource_p,
 		goto fail_nat_dev_add;
 	}
 
-	/* Register a wakeup source. */
-	ipa_ctx->w_lock =
-		wakeup_source_register(&ipa_pdev->dev, "IPA_WS");
-	if (!ipa_ctx->w_lock) {
-		IPAERR("IPA wakeup source register failed\n");
-		result = -ENOMEM;
-		goto fail_w_source_register;
-	}
 
+
+	/* Create a wakeup source. */
+	wakeup_source_init(&ipa_ctx->w_lock, "IPA_WS");
 	spin_lock_init(&ipa_ctx->wakelock_ref_cnt.spinlock);
 
 	/* Initialize the SPS PM lock. */
@@ -4365,9 +4404,6 @@ fail_ipa_interrupts_init:
 fail_create_apps_resource:
 	ipa_rm_exit();
 fail_ipa_rm_init:
-	wakeup_source_unregister(ipa_ctx->w_lock);
-	ipa_ctx->w_lock = NULL;
-fail_w_source_register:
 fail_nat_dev_add:
 	cdev_del(&ipa_ctx->cdev);
 fail_cdev_add:
@@ -4644,65 +4680,100 @@ static int get_ipa_dts_configuration(struct platform_device *pdev,
 
 static int ipa_smmu_wlan_cb_probe(struct device *dev)
 {
-	struct ipa_smmu_cb_ctx *cb = ipa2_get_smmu_ctx(IPA_SMMU_CB_WLAN);
-	int fast = 0;
-	int bypass = 0;
-	u32 iova_ap_mapping[2];
+	struct ipa_smmu_cb_ctx *cb = ipa2_get_wlan_smmu_ctx();
+	int atomic_ctx = 1;
+	int fast = 1;
+	int bypass = 1;
+	int ret;
 
-	IPADBG("WLAN CB PROBE dev=%pK retrieving IOMMU mapping\n", dev);
+	IPADBG("sub pdev=%p\n", dev);
 
-	cb->iommu_domain = iommu_get_domain_for_dev(dev);
-	if (IS_ERR_OR_NULL(cb->iommu_domain)) {
-		IPAERR("could not get iommu domain\n");
-		return -EINVAL;
+	cb->dev = dev;
+	cb->iommu = iommu_domain_alloc(&platform_bus_type);
+	if (!cb->iommu) {
+		IPAERR("could not alloc iommu domain\n");
+		/* assume this failure is because iommu driver is not ready */
+		return -EPROBE_DEFER;
 	}
-	IPADBG("WLAN CB PROBE mapping retrieved\n");
-
-	cb->dev   = dev;
 	cb->valid = true;
 
-	cb->va_start = cb->va_end  = cb->va_size = 0;
-	if (of_property_read_u32_array(
-			dev->of_node, "qcom,iommu-dma-addr-pool",
-			iova_ap_mapping, 2) == 0) {
-		cb->va_start = iova_ap_mapping[0];
-		cb->va_size  = iova_ap_mapping[1];
-		cb->va_end   = cb->va_start + cb->va_size;
+	if (smmu_info.s1_bypass) {
+		if (iommu_domain_set_attr(cb->iommu,
+			DOMAIN_ATTR_S1_BYPASS,
+			&bypass)) {
+			IPAERR("couldn't set bypass\n");
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU S1 BYPASS\n");
+	} else {
+		if (iommu_domain_set_attr(cb->iommu,
+			DOMAIN_ATTR_ATOMIC,
+			&atomic_ctx)) {
+			IPAERR("couldn't set domain as atomic\n");
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU atomic set\n");
+		if (smmu_info.fast_map) {
+			if (iommu_domain_set_attr(cb->iommu,
+				DOMAIN_ATTR_FAST,
+				&fast)) {
+				IPAERR("couldn't set fast map\n");
+				cb->valid = false;
+				return -EIO;
+			}
+			IPADBG("SMMU fast map set\n");
+		}
 	}
 
-	IPADBG("WLAN CB PROBE dev=%pK va_start=0x%x va_size=0x%x\n",
-		   dev, cb->va_start, cb->va_size);
+	ret = iommu_attach_device(cb->iommu, dev);
+	if (ret) {
+		IPAERR("could not attach device ret=%d\n", ret);
+		cb->valid = false;
+		return ret;
+	}
 
-	/*
-	 * Prior to these calls to iommu_domain_get_attr(), these
-	 * attributes were set in this function relative to dtsi values
-	 * defined for this driver.  In other words, if corresponding ipa
-	 * driver owned values were found in the dtsi, they were read and
-	 * set here.
-	 *
-	 * In this new world, the developer will use iommu owned dtsi
-	 * settings to set them there.  This new logic below, simply
-	 * checks to see if they've been set in dtsi.  If so, the logic
-	 * further below acts accordingly...
-	 */
-	iommu_domain_get_attr(cb->iommu_domain, DOMAIN_ATTR_S1_BYPASS, &bypass);
-	iommu_domain_get_attr(cb->iommu_domain, DOMAIN_ATTR_FAST, &fast);
-
-	IPADBG(
-	  "WLAN CB PROBE dev=%pK DOMAIN ATTRS bypass=%d fast=%d\n",
-	  dev, bypass, fast);
+	if (!smmu_info.s1_bypass) {
+		IPAERR("map IPA region to WLAN_CB IOMMU\n");
+		ret = ipa_iommu_map(cb->iommu,
+			rounddown(smmu_info.ipa_base, PAGE_SIZE),
+			rounddown(smmu_info.ipa_base, PAGE_SIZE),
+			roundup(smmu_info.ipa_size, PAGE_SIZE),
+			IOMMU_READ | IOMMU_WRITE | IOMMU_MMIO);
+		if (ret) {
+			IPAERR("map IPA to WLAN_CB IOMMU failed ret=%d\n",
+				ret);
+			arm_iommu_detach_device(cb->dev);
+			cb->valid = false;
+			return ret;
+		}
+	}
 
 	return 0;
 }
 
 static int ipa_smmu_uc_cb_probe(struct device *dev)
 {
-	struct ipa_smmu_cb_ctx *cb = ipa2_get_smmu_ctx(IPA_SMMU_CB_UC);
-	int fast = 0;
-	int bypass = 0;
+	struct ipa_smmu_cb_ctx *cb = ipa2_get_uc_smmu_ctx();
+	int atomic_ctx = 1;
+	int ret;
+	int fast = 1;
+	int bypass = 1;
 	u32 iova_ap_mapping[2];
 
 	IPADBG("UC CB PROBE sub pdev=%p\n", dev);
+
+	ret = of_property_read_u32_array(dev->of_node, "qcom,iova-mapping",
+		iova_ap_mapping, 2);
+	if (ret) {
+		IPAERR("Fail to read UC start/size iova addresses\n");
+		return ret;
+	}
+	cb->va_start = iova_ap_mapping[0];
+	cb->va_size = iova_ap_mapping[1];
+	cb->va_end = cb->va_start + cb->va_size;
+	IPADBG("UC va_start=0x%x va_sise=0x%x\n", cb->va_start, cb->va_size);
 
 	if (dma_set_mask(dev, DMA_BIT_MASK(32)) ||
 		    dma_set_coherent_mask(dev, DMA_BIT_MASK(32))) {
@@ -4710,51 +4781,63 @@ static int ipa_smmu_uc_cb_probe(struct device *dev)
 		return -EOPNOTSUPP;
 	}
 
-	IPADBG("UC CB PROBE dev=%pK retrieving IOMMU mapping\n", dev);
+	IPADBG("UC CB PROBE=%p create IOMMU mapping\n", dev);
 
-	cb->iommu_domain = iommu_get_domain_for_dev(dev);
-	if (IS_ERR_OR_NULL(cb->iommu_domain)) {
-		IPAERR("could not get iommu domain\n");
+	cb->dev = dev;
+	cb->mapping = arm_iommu_create_mapping(&platform_bus_type,
+				cb->va_start, cb->va_size);
+	if (IS_ERR_OR_NULL(cb->mapping)) {
+		IPADBG("Fail to create mapping\n");
 		/* assume this failure is because iommu driver is not ready */
 		return -EPROBE_DEFER;
 	}
-	IPADBG("UC CB PROBE mapping retrieved\n");
-
-	cb->dev   = dev;
+	IPADBG("SMMU mapping created\n");
 	cb->valid = true;
 
-	cb->va_start = cb->va_end  = cb->va_size = 0;
-
-	if (of_property_read_u32_array(
-			dev->of_node, "qcom,iommu-dma-addr-pool",
-			iova_ap_mapping, 2) == 0) {
-		cb->va_start = iova_ap_mapping[0];
-		cb->va_size  = iova_ap_mapping[1];
-		cb->va_end   = cb->va_start + cb->va_size;
+	IPADBG("UC CB PROBE sub pdev=%p set attribute\n", dev);
+	if (smmu_info.s1_bypass) {
+		if (iommu_domain_set_attr(cb->mapping->domain,
+			DOMAIN_ATTR_S1_BYPASS,
+			&bypass)) {
+			IPAERR("couldn't set bypass\n");
+			arm_iommu_release_mapping(cb->mapping);
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU S1 BYPASS\n");
+	} else {
+		if (iommu_domain_set_attr(cb->mapping->domain,
+			DOMAIN_ATTR_ATOMIC,
+			&atomic_ctx)) {
+			IPAERR("couldn't set domain as atomic\n");
+			arm_iommu_release_mapping(cb->mapping);
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU atomic set\n");
+		if (smmu_info.fast_map) {
+			if (iommu_domain_set_attr(cb->mapping->domain,
+				DOMAIN_ATTR_FAST,
+				&fast)) {
+				IPAERR("couldn't set fast map\n");
+				arm_iommu_release_mapping(cb->mapping);
+				cb->valid = false;
+				return -EIO;
+			}
+			IPADBG("SMMU fast map set\n");
+		}
 	}
 
-	IPADBG("UC CB PROBE dev=%pK va_start=0x%x va_size=0x%x\n",
-		   dev, cb->va_start, cb->va_size);
+	IPADBG("UC CB PROBE sub pdev=%p attaching IOMMU device\n", dev);
+	ret = arm_iommu_attach_device(cb->dev, cb->mapping);
+	if (ret) {
+		IPAERR("could not attach device ret=%d\n", ret);
+		arm_iommu_release_mapping(cb->mapping);
+		cb->valid = false;
+		return ret;
+	}
 
-	/*
-	 * Prior to these calls to iommu_domain_get_attr(), these
-	 * attributes were set in this function relative to dtsi values
-	 * defined for this driver.  In other words, if corresponding ipa
-	 * driver owned values were found in the dtsi, they were read and
-	 * set here.
-	 *
-	 * In this new world, the developer will use iommu owned dtsi
-	 * settings to set them there.  This new logic below, simply
-	 * checks to see if they've been set in dtsi.  If so, the logic
-	 * further below acts accordingly...
-	 */
-
-	iommu_domain_get_attr(cb->iommu_domain, DOMAIN_ATTR_S1_BYPASS, &bypass);
-	iommu_domain_get_attr(cb->iommu_domain, DOMAIN_ATTR_FAST, &fast);
-
-	IPADBG("UC CB PROBE dev=%pK DOMAIN ATTRS bypass=%d fast=%d\n",
-		   dev, bypass, fast);
-
+	cb->next_addr = cb->va_end;
 	ipa_ctx->uc_pdev = dev;
 
 	IPADBG("UC CB PROBE pdev=%p attached\n", dev);
@@ -4763,13 +4846,25 @@ static int ipa_smmu_uc_cb_probe(struct device *dev)
 
 static int ipa_smmu_ap_cb_probe(struct device *dev)
 {
-	struct ipa_smmu_cb_ctx *cb = ipa2_get_smmu_ctx(IPA_SMMU_CB_AP);
+	struct ipa_smmu_cb_ctx *cb = ipa2_get_smmu_ctx();
 	int result;
-	int fast = 0;
-	int bypass = 0;
+	int atomic_ctx = 1;
+	int fast = 1;
+	int bypass = 1;
 	u32 iova_ap_mapping[2];
 
-	IPADBG("AP CB probe: dev=%pK\n", dev);
+	IPADBG("AP CB probe: sub pdev=%p\n", dev);
+
+	result = of_property_read_u32_array(dev->of_node, "qcom,iova-mapping",
+		 iova_ap_mapping, 2);
+	if (result) {
+		IPAERR("Fail to read AP start/size iova addresses\n");
+		return result;
+	}
+	cb->va_start = iova_ap_mapping[0];
+	cb->va_size = iova_ap_mapping[1];
+	cb->va_end = cb->va_start + cb->va_size;
+	IPADBG("AP va_start=0x%x va_sise=0x%x\n", cb->va_start, cb->va_size);
 
 	if (dma_set_mask(dev, DMA_BIT_MASK(32)) ||
 		    dma_set_coherent_mask(dev, DMA_BIT_MASK(32))) {
@@ -4777,59 +4872,68 @@ static int ipa_smmu_ap_cb_probe(struct device *dev)
 		return -EOPNOTSUPP;
 	}
 
-	IPADBG("AP CB PROBE dev=%pK retrieving IOMMU mapping\n", dev);
-	cb->iommu_domain = iommu_get_domain_for_dev(dev);
-	if (IS_ERR_OR_NULL(cb->iommu_domain)) {
-		IPAERR("could not get iommu domain\n");
+	cb->dev = dev;
+	cb->mapping = arm_iommu_create_mapping(&platform_bus_type,
+					       cb->va_start,
+					       cb->va_size);
+	if (IS_ERR_OR_NULL(cb->mapping)) {
+		IPADBG("Fail to create mapping\n");
 		/* assume this failure is because iommu driver is not ready */
 		return -EPROBE_DEFER;
 	}
-
-	IPADBG("AP CB PROBE mapping retrieved\n");
-
-	cb->dev = dev;
+	IPADBG("SMMU mapping created\n");
 	cb->valid = true;
 
-	cb->va_start = cb->va_end  = cb->va_size = 0;
-	if (of_property_read_u32_array(
-				dev->of_node, "qcom,iommu-dma-addr-pool",
-				iova_ap_mapping, 2) == 0) {
-		cb->va_start = iova_ap_mapping[0];
-		cb->va_size  = iova_ap_mapping[1];
-		cb->va_end   = cb->va_start + cb->va_size;
+	if (smmu_info.s1_bypass) {
+		if (iommu_domain_set_attr(cb->mapping->domain,
+			DOMAIN_ATTR_S1_BYPASS,
+			&bypass)) {
+			IPAERR("couldn't set bypass\n");
+			arm_iommu_release_mapping(cb->mapping);
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU S1 BYPASS\n");
+	} else {
+		if (iommu_domain_set_attr(cb->mapping->domain,
+			DOMAIN_ATTR_ATOMIC,
+			&atomic_ctx)) {
+			IPAERR("couldn't set domain as atomic\n");
+			arm_iommu_release_mapping(cb->mapping);
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU atomic set\n");
+
+		if (iommu_domain_set_attr(cb->mapping->domain,
+			DOMAIN_ATTR_FAST,
+			&fast)) {
+			IPAERR("couldn't set fast map\n");
+			arm_iommu_release_mapping(cb->mapping);
+			cb->valid = false;
+			return -EIO;
+		}
+		IPADBG("SMMU fast map set\n");
 	}
 
-
-	IPADBG("AP va_start=0x%x va_sise=0x%x\n", cb->va_start, cb->va_size);
-
-	/*
-	 * Prior to these calls to iommu_domain_get_attr(), these
-	 * attributes were set in this function relative to dtsi values
-	 * defined for this driver.  In other words, if corresponding ipa
-	 * driver owned values were found in the dtsi, they were read and
-	 * set here.
-	 *
-	 * In this new world, the developer will use iommu owned dtsi
-	 * settings to set them there.  This new logic below, simply
-	 * checks to see if they've been set in dtsi.  If so, the logic
-	 * further below acts accordingly...
-	 */
-	iommu_domain_get_attr(cb->iommu_domain, DOMAIN_ATTR_S1_BYPASS, &bypass);
-	iommu_domain_get_attr(cb->iommu_domain, DOMAIN_ATTR_FAST, &fast);
-
-	IPADBG("AP CB PROBE dev=%pK DOMAIN ATTRS bypass=%d fast=%d\n",
-			dev, bypass, fast);
+	result = arm_iommu_attach_device(cb->dev, cb->mapping);
+	if (result) {
+		IPAERR("couldn't attach to IOMMU ret=%d\n", result);
+		cb->valid = false;
+		return result;
+	}
 
 	if (!smmu_info.s1_bypass) {
 		IPAERR("map IPA region to AP_CB IOMMU\n");
-		result = ipa_iommu_map(cb->iommu_domain,
+		result = ipa_iommu_map(cb->mapping->domain,
 				rounddown(smmu_info.ipa_base, PAGE_SIZE),
 				rounddown(smmu_info.ipa_base, PAGE_SIZE),
 				roundup(smmu_info.ipa_size, PAGE_SIZE),
 				IOMMU_READ | IOMMU_WRITE | IOMMU_MMIO);
 		if (result) {
 			IPAERR("map IPA region to AP_CB IOMMU failed ret=%d\n",
-					result);
+				result);
+			arm_iommu_release_mapping(cb->mapping);
 			cb->valid = false;
 			return result;
 		}
@@ -4844,6 +4948,8 @@ static int ipa_smmu_ap_cb_probe(struct device *dev)
 	result = ipa_init(&ipa_res, dev);
 	if (result) {
 		IPAERR("ipa_init failed\n");
+		arm_iommu_detach_device(cb->dev);
+		arm_iommu_release_mapping(cb->mapping);
 		cb->valid = false;
 		return result;
 	}
@@ -4919,12 +5025,18 @@ int ipa_plat_drv_probe(struct platform_device *pdev_p,
 		if (of_property_read_bool(pdev_p->dev.of_node,
 		    "qcom,smmu-s1-bypass"))
 			smmu_info.s1_bypass = true;
+		if (of_property_read_bool(pdev_p->dev.of_node,
+		    "qcom,smmu-fast-map"))
+			smmu_info.fast_map = true;
 		smmu_info.arm_smmu = true;
 		pr_info("IPA smmu_info.s1_bypass=%d smmu_info.fast_map=%d\n",
 			smmu_info.s1_bypass, smmu_info.fast_map);
 		result = of_platform_populate(pdev_p->dev.of_node,
 				pdrv_match, NULL, &pdev_p->dev);
-
+	} else if (of_property_read_bool(pdev_p->dev.of_node,
+				"qcom,msm-smmu")) {
+		IPAERR("Legacy IOMMU not supported\n");
+		result = -EOPNOTSUPP;
 	} else {
 		if (dma_set_mask(&pdev_p->dev, DMA_BIT_MASK(32)) ||
 			    dma_set_coherent_mask(&pdev_p->dev,
@@ -4943,7 +5055,6 @@ int ipa_plat_drv_probe(struct platform_device *pdev_p,
 			return result;
 		}
 	}
-	IPADBG("IPA PROBE SUCCESSFUL, result %d\n", result);
 
 	return result;
 }
@@ -5004,7 +5115,7 @@ struct ipa_context *ipa_get_ctx(void)
 int ipa_iommu_map(struct iommu_domain *domain,
 	unsigned long iova, phys_addr_t paddr, size_t size, int prot)
 {
-	struct ipa_smmu_cb_ctx *ap_cb = ipa2_get_smmu_ctx(IPA_SMMU_CB_AP);
+	struct ipa_smmu_cb_ctx *ap_cb = ipa2_get_smmu_ctx();
 	struct ipa_smmu_cb_ctx *uc_cb = ipa2_get_uc_smmu_ctx();
 
 	IPADBG("domain =0x%p iova 0x%lx\n", domain, iova);
@@ -5030,3 +5141,4 @@ int ipa_iommu_map(struct iommu_domain *domain,
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("IPA HW device driver");
+

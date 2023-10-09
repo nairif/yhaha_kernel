@@ -1,21 +1,32 @@
-/* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2019, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License version
+ * 2 and only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
  */
 #if !defined(_GSI_HWIO_H_)
 #define _GSI_HWIO_H_
-/*
+
+/* *****************************************************************************
  *
- * HWIO register definitions to follow:
+ * HWIO register definitions.
  *
+ * *****************************************************************************
  */
+
 #define GSI_REG_BASE (IPA_0_IPA_WRAPPER_BASE + 0x00004000)
 #define GSI_REG_BASE_PHYS (IPA_0_IPA_WRAPPER_BASE_PHYS + 0x00004000)
 #define GSI_REG_BASE_OFFS 0x00004000
 #define HWIO_GSI_CFG_ADDR (GSI_REG_BASE + 0x00000000)
 #define HWIO_GSI_CFG_PHYS (GSI_REG_BASE_PHYS + 0x00000000)
 #define HWIO_GSI_CFG_OFFS (GSI_REG_BASE_OFFS + 0x00000000)
-#define HWIO_GSI_CFG_RMSK 0xf3f
+#define HWIO_GSI_CFG_RMSK 0x3f
 #define HWIO_GSI_CFG_ATTR 0x3
 #define HWIO_GSI_CFG_IN in_dword_masked(HWIO_GSI_CFG_ADDR, \
 					HWIO_GSI_CFG_RMSK)
@@ -25,8 +36,6 @@
 						    m, \
 						    v, \
 						    HWIO_GSI_CFG_IN)
-#define HWIO_GSI_CFG_SLEEP_CLK_DIV_BMSK 0xf00
-#define HWIO_GSI_CFG_SLEEP_CLK_DIV_SHFT 0x8
 #define HWIO_GSI_CFG_BP_MTRIX_DISABLE_BMSK 0x20
 #define HWIO_GSI_CFG_BP_MTRIX_DISABLE_SHFT 0x5
 #define HWIO_GSI_CFG_GSI_PWR_CLPS_BMSK 0x10
@@ -60,7 +69,7 @@
 #define HWIO_GSI_REE_CFG_ADDR (GSI_REG_BASE + 0x00000038)
 #define HWIO_GSI_REE_CFG_PHYS (GSI_REG_BASE_PHYS + 0x00000038)
 #define HWIO_GSI_REE_CFG_OFFS (GSI_REG_BASE_OFFS + 0x00000038)
-#define HWIO_GSI_REE_CFG_RMSK 0xff03
+#define HWIO_GSI_REE_CFG_RMSK 0xff01
 #define HWIO_GSI_REE_CFG_ATTR 0x3
 #define HWIO_GSI_REE_CFG_IN in_dword_masked(HWIO_GSI_REE_CFG_ADDR, \
 					    HWIO_GSI_REE_CFG_RMSK)
@@ -73,10 +82,14 @@
 		HWIO_GSI_REE_CFG_IN)
 #define HWIO_GSI_REE_CFG_MAX_BURST_SIZE_BMSK 0xff00
 #define HWIO_GSI_REE_CFG_MAX_BURST_SIZE_SHFT 0x8
-#define HWIO_GSI_REE_CFG_CHANNEL_EMPTY_INT_ENABLE_BMSK 0x2
-#define HWIO_GSI_REE_CFG_CHANNEL_EMPTY_INT_ENABLE_SHFT 0x1
 #define HWIO_GSI_REE_CFG_MOVE_TO_ESC_CLR_MODE_TRSH_BMSK 0x1
 #define HWIO_GSI_REE_CFG_MOVE_TO_ESC_CLR_MODE_TRSH_SHFT 0x0
+#define HWIO_GSI_SHRAM_WR_WRR_ADDR (GSI_REG_BASE + 0x00000050)
+#define HWIO_GSI_SHRAM_WR_WRR_PHYS (GSI_REG_BASE_PHYS + 0x00000050)
+#define HWIO_GSI_SHRAM_WR_WRR_OFFS (GSI_REG_BASE_OFFS + 0x00000050)
+#define HWIO_GSI_SHRAM_RD_WRR_ADDR (GSI_REG_BASE + 0x00000058)
+#define HWIO_GSI_SHRAM_RD_WRR_PHYS (GSI_REG_BASE_PHYS + 0x00000058)
+#define HWIO_GSI_SHRAM_RD_WRR_OFFS (GSI_REG_BASE_OFFS + 0x00000058)
 #define HWIO_GSI_CGC_CTRL_ADDR (GSI_REG_BASE + 0x00000060)
 #define HWIO_GSI_CGC_CTRL_PHYS (GSI_REG_BASE_PHYS + 0x00000060)
 #define HWIO_GSI_CGC_CTRL_OFFS (GSI_REG_BASE_OFFS + 0x00000060)
@@ -236,6 +249,29 @@
 					   0x00000300 + 0x4 * (n))
 #define HWIO_GSI_MANAGER_EE_QOS_n_OFFS(n) (GSI_REG_BASE_OFFS + \
 					   0x00000300 + 0x4 * (n))
+#define HWIO_GSI_MANAGER_EE_QOS_n_RMSK 0x1f1f03
+#define HWIO_GSI_MANAGER_EE_QOS_n_MAXn 2
+#define HWIO_GSI_MANAGER_EE_QOS_n_ATTR 0x0
+#define HWIO_GSI_MANAGER_EE_QOS_n_INI(n) in_dword_masked( \
+		HWIO_GSI_MANAGER_EE_QOS_n_ADDR(n), \
+		HWIO_GSI_MANAGER_EE_QOS_n_RMSK)
+#define HWIO_GSI_MANAGER_EE_QOS_n_INMI(n, mask) in_dword_masked( \
+		HWIO_GSI_MANAGER_EE_QOS_n_ADDR(n), \
+		mask)
+#define HWIO_GSI_MANAGER_EE_QOS_n_OUTI(n, val) out_dword( \
+		HWIO_GSI_MANAGER_EE_QOS_n_ADDR(n), \
+		val)
+#define HWIO_GSI_MANAGER_EE_QOS_n_OUTMI(n, mask, val) out_dword_masked_ns( \
+		HWIO_GSI_MANAGER_EE_QOS_n_ADDR(n), \
+		mask, \
+		val, \
+		HWIO_GSI_MANAGER_EE_QOS_n_INI(n))
+#define HWIO_GSI_MANAGER_EE_QOS_n_MAX_EV_ALLOC_BMSK 0x1f0000
+#define HWIO_GSI_MANAGER_EE_QOS_n_MAX_EV_ALLOC_SHFT 0x10
+#define HWIO_GSI_MANAGER_EE_QOS_n_MAX_CH_ALLOC_BMSK 0x1f00
+#define HWIO_GSI_MANAGER_EE_QOS_n_MAX_CH_ALLOC_SHFT 0x8
+#define HWIO_GSI_MANAGER_EE_QOS_n_EE_PRIO_BMSK 0x3
+#define HWIO_GSI_MANAGER_EE_QOS_n_EE_PRIO_SHFT 0x0
 #define HWIO_GSI_SHRAM_PTR_CH_CNTXT_BASE_ADDR_ADDR (GSI_REG_BASE + \
 						    0x00000200)
 #define HWIO_GSI_SHRAM_PTR_CH_CNTXT_BASE_ADDR_PHYS (GSI_REG_BASE_PHYS +	\
@@ -290,36 +326,6 @@
 							+ 0x00000250)
 #define HWIO_GSI_SHRAM_PTR_MCS_SCRATCH2_BASE_ADDR_OFFS (GSI_REG_BASE_OFFS \
 							+ 0x00000250)
-#define HWIO_GSI_SHRAM_PTR_CH_VP_TRANS_TABLE_BASE_ADDR_ADDR (GSI_REG_BASE \
-							     + 0x00000254)
-#define HWIO_GSI_SHRAM_PTR_CH_VP_TRANS_TABLE_BASE_ADDR_PHYS ( \
-		GSI_REG_BASE_PHYS + 0x00000254)
-#define HWIO_GSI_SHRAM_PTR_CH_VP_TRANS_TABLE_BASE_ADDR_OFFS ( \
-		GSI_REG_BASE_OFFS + 0x00000254)
-#define HWIO_GSI_SHRAM_PTR_EV_VP_TRANS_TABLE_BASE_ADDR_ADDR (GSI_REG_BASE \
-							     + 0x00000258)
-#define HWIO_GSI_SHRAM_PTR_EV_VP_TRANS_TABLE_BASE_ADDR_PHYS ( \
-		GSI_REG_BASE_PHYS + 0x00000258)
-#define HWIO_GSI_SHRAM_PTR_EV_VP_TRANS_TABLE_BASE_ADDR_OFFS ( \
-		GSI_REG_BASE_OFFS + 0x00000258)
-#define HWIO_GSI_SHRAM_PTR_USER_INFO_DATA_BASE_ADDR_ADDR (GSI_REG_BASE + \
-							  0x0000025c)
-#define HWIO_GSI_SHRAM_PTR_USER_INFO_DATA_BASE_ADDR_PHYS ( \
-		GSI_REG_BASE_PHYS + 0x0000025c)
-#define HWIO_GSI_SHRAM_PTR_USER_INFO_DATA_BASE_ADDR_OFFS ( \
-		GSI_REG_BASE_OFFS + 0x0000025c)
-#define HWIO_GSI_SHRAM_PTR_EE_CMD_FIFO_BASE_ADDR_ADDR (GSI_REG_BASE + \
-						       0x00000260)
-#define HWIO_GSI_SHRAM_PTR_EE_CMD_FIFO_BASE_ADDR_PHYS (GSI_REG_BASE_PHYS + \
-						       0x00000260)
-#define HWIO_GSI_SHRAM_PTR_EE_CMD_FIFO_BASE_ADDR_OFFS (GSI_REG_BASE_OFFS + \
-						       0x00000260)
-#define HWIO_GSI_SHRAM_PTR_CH_CMD_FIFO_BASE_ADDR_ADDR (GSI_REG_BASE + \
-						       0x00000264)
-#define HWIO_GSI_SHRAM_PTR_CH_CMD_FIFO_BASE_ADDR_PHYS (GSI_REG_BASE_PHYS + \
-						       0x00000264)
-#define HWIO_GSI_SHRAM_PTR_CH_CMD_FIFO_BASE_ADDR_OFFS (GSI_REG_BASE_OFFS + \
-						       0x00000264)
 #define HWIO_GSI_IRAM_PTR_CH_CMD_ADDR (GSI_REG_BASE + 0x00000400)
 #define HWIO_GSI_IRAM_PTR_CH_CMD_PHYS (GSI_REG_BASE_PHYS + 0x00000400)
 #define HWIO_GSI_IRAM_PTR_CH_CMD_OFFS (GSI_REG_BASE_OFFS + 0x00000400)
@@ -328,11 +334,6 @@
 					       0x00000404)
 #define HWIO_GSI_IRAM_PTR_EE_GENERIC_CMD_OFFS (GSI_REG_BASE_OFFS + \
 					       0x00000404)
-#define HWIO_GSI_IRAM_PTR_TLV_CH_NOT_FULL_ADDR (GSI_REG_BASE + 0x00000408)
-#define HWIO_GSI_IRAM_PTR_TLV_CH_NOT_FULL_PHYS (GSI_REG_BASE_PHYS + \
-						0x00000408)
-#define HWIO_GSI_IRAM_PTR_TLV_CH_NOT_FULL_OFFS (GSI_REG_BASE_OFFS + \
-						0x00000408)
 #define HWIO_GSI_IRAM_PTR_CH_DB_ADDR (GSI_REG_BASE + 0x00000418)
 #define HWIO_GSI_IRAM_PTR_CH_DB_PHYS (GSI_REG_BASE_PHYS + 0x00000418)
 #define HWIO_GSI_IRAM_PTR_CH_DB_OFFS (GSI_REG_BASE_OFFS + 0x00000418)
@@ -391,19 +392,19 @@
 #define HWIO_GSI_IRAM_PTR_UC_GP_INT_OFFS (GSI_REG_BASE_OFFS + 0x00000448)
 #define HWIO_GSI_IRAM_PTR_INT_MOD_STOPPED_ADDR (GSI_REG_BASE + 0x0000044c)
 #define HWIO_GSI_IRAM_PTR_INT_MOD_STOPPED_PHYS (GSI_REG_BASE_PHYS + \
-						0x0000044c)
+					       0x0000044c)
 #define HWIO_GSI_IRAM_PTR_INT_MOD_STOPPED_OFFS (GSI_REG_BASE_OFFS + \
-						0x0000044c)
+					       0x0000044c)
 #define HWIO_GSI_IRAM_PTR_SDMA_INT_n_ADDR(n) (GSI_REG_BASE + 0x00000450 + \
 					      0x4 * (n))
 #define HWIO_GSI_IRAM_PTR_SDMA_INT_n_PHYS(n) (GSI_REG_BASE_PHYS + \
 					      0x00000450 + 0x4 * (n))
 #define HWIO_GSI_IRAM_PTR_SDMA_INT_n_OFFS(n) (GSI_REG_BASE_OFFS + \
 					      0x00000450 + 0x4 * (n))
-#define HWIO_GSI_INST_RAM_n_ADDR(n) (GSI_REG_BASE + 0x0001b000 + 0x4 * (n))
-#define HWIO_GSI_INST_RAM_n_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001b000 + \
+#define HWIO_GSI_INST_RAM_n_ADDR(n) (GSI_REG_BASE + 0x00004000 + 0x4 * (n))
+#define HWIO_GSI_INST_RAM_n_PHYS(n) (GSI_REG_BASE_PHYS + 0x00004000 + \
 				     0x4 * (n))
-#define HWIO_GSI_INST_RAM_n_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001b000 + \
+#define HWIO_GSI_INST_RAM_n_OFFS(n) (GSI_REG_BASE_OFFS + 0x00004000 + \
 				     0x4 * (n))
 #define HWIO_GSI_SHRAM_n_ADDR(n) (GSI_REG_BASE + 0x00002000 + 0x4 * (n))
 #define HWIO_GSI_SHRAM_n_PHYS(n) (GSI_REG_BASE_PHYS + 0x00002000 + 0x4 * \
@@ -411,7 +412,7 @@
 #define HWIO_GSI_SHRAM_n_OFFS(n) (GSI_REG_BASE_OFFS + 0x00002000 + 0x4 * \
 				  (n))
 #define HWIO_GSI_SHRAM_n_RMSK 0xffffffff
-#define HWIO_GSI_SHRAM_n_MAXn 1343
+#define HWIO_GSI_SHRAM_n_MAXn 1023
 #define HWIO_GSI_SHRAM_n_ATTR 0x3
 #define HWIO_GSI_SHRAM_n_INI(n) in_dword_masked(HWIO_GSI_SHRAM_n_ADDR( \
 							n), \
@@ -428,39 +429,6 @@
 		HWIO_GSI_SHRAM_n_INI(n))
 #define HWIO_GSI_SHRAM_n_SHRAM_BMSK 0xffffffff
 #define HWIO_GSI_SHRAM_n_SHRAM_SHFT 0x0
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_ADDR(n, k) (GSI_REG_BASE + \
-						    0x00003800 + 0x80 *	\
-						    (n) + 0x4 * (k))
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_PHYS(n, k) (GSI_REG_BASE_PHYS +	\
-						    0x00003800 + 0x80 *	\
-						    (n) + 0x4 * (k))
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_OFFS(n, k) (GSI_REG_BASE_OFFS +	\
-						    0x00003800 + 0x80 *	\
-						    (n) + 0x4 * (k))
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_RMSK 0x3f
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_MAXn 2
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_MAXk 22
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_ATTR 0x3
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_INI2(n, k) in_dword_masked( \
-		HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_ADDR(n, k), \
-		HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_RMSK)
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_INMI2(n, k, mask) in_dword_masked( \
-		HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_ADDR(n, k), \
-		mask)
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_OUTI2(n, k, val) out_dword( \
-		HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_ADDR(n, k), \
-		val)
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_OUTMI2(n, k, mask, \
-					       val) out_dword_masked_ns( \
-		HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_ADDR(n,	\
-						     k), \
-		mask, \
-		val, \
-		HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_INI2(n, k))
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_VALID_BMSK 0x20
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_VALID_SHFT 0x5
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_PHY_CH_BMSK 0x1f
-#define HWIO_GSI_MAP_EE_n_CH_k_VP_TABLE_PHY_CH_SHFT 0x0
 #define HWIO_GSI_TEST_BUS_SEL_ADDR (GSI_REG_BASE + 0x00001000)
 #define HWIO_GSI_TEST_BUS_SEL_PHYS (GSI_REG_BASE_PHYS + 0x00001000)
 #define HWIO_GSI_TEST_BUS_SEL_OFFS (GSI_REG_BASE_OFFS + 0x00001000)
@@ -506,7 +474,6 @@
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_EVE_5_FVAL 0x18
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IE_0_FVAL 0x1b
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IE_1_FVAL 0x1c
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IE_2_FVAL 0x1d
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IC_0_FVAL 0x1f
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IC_1_FVAL 0x20
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IC_2_FVAL 0x21
@@ -527,13 +494,6 @@
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_CSR_FVAL 0x3a
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_SDMA_0_FVAL 0x3c
 #define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_SMDA_1_FVAL 0x3d
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_CSR_1_FVAL 0x3e
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_CSR_2_FVAL 0x3f
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_MCS_5_FVAL 0x40
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_IC_5_FVAL 0x41
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_CSR_3_FVAL 0x42
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_TLV_0_FVAL 0x43
-#define HWIO_GSI_TEST_BUS_SEL_GSI_TESTBUS_SEL_REE_8_FVAL 0x44
 #define HWIO_GSI_TEST_BUS_REG_ADDR (GSI_REG_BASE + 0x00001008)
 #define HWIO_GSI_TEST_BUS_REG_PHYS (GSI_REG_BASE_PHYS + 0x00001008)
 #define HWIO_GSI_TEST_BUS_REG_OFFS (GSI_REG_BASE_OFFS + 0x00001008)
@@ -620,6 +580,23 @@
 #define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_OFFS(n) (GSI_REG_BASE_OFFS + \
 						      0x00001070 + 0x4 * \
 						      (n))
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_RMSK 0xffffffff
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_MAXn 3
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_ATTR 0x1
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_INI(n) in_dword_masked( \
+		HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_ADDR(n), \
+		HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_RMSK)
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_INMI(n, mask) in_dword_masked( \
+		HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_ADDR(n), \
+		mask)
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_MID_BMSK 0xf8000000
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_MID_SHFT 0x1b
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_TID_BMSK 0x7c00000
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_TID_SHFT 0x16
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_WRITE_BMSK 0x200000
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_WRITE_SHFT 0x15
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_ADDR_20_0_BMSK 0x1fffff
+#define HWIO_GSI_DEBUG_QSB_LOG_LAST_MISC_IDn_ADDR_20_0_SHFT 0x0
 #define HWIO_GSI_DEBUG_SW_RF_n_WRITE_ADDR(n) (GSI_REG_BASE + 0x00001080 + \
 					      0x4 * (n))
 #define HWIO_GSI_DEBUG_SW_RF_n_WRITE_PHYS(n) (GSI_REG_BASE_PHYS + \
@@ -652,6 +629,22 @@
 #define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_OFFS(n, k) (GSI_REG_BASE_OFFS + \
 						      0x00001400 + 0x80 * \
 						      (n) + 0x4 * (k))
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_RMSK 0x3f
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_MAXn 3
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_MAXk 16
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_ATTR 0x1
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_INI2(n, k) in_dword_masked( \
+		HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_ADDR(n, k), \
+		HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_RMSK)
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_INMI2(n, k, \
+						mask) in_dword_masked( \
+		HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_ADDR(n, \
+						       k), \
+		mask)
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_VALID_BMSK 0x20
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_VALID_SHFT 0x5
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_PHY_CH_BMSK 0x1f
+#define HWIO_GSI_DEBUG_EE_n_CH_k_VP_TABLE_PHY_CH_SHFT 0x0
 #define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_ADDR(n, k) (GSI_REG_BASE + \
 						      0x00001600 + 0x80 * \
 						      (n) + 0x4 * (k))
@@ -663,7 +656,7 @@
 						      (n) + 0x4 * (k))
 #define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_RMSK 0x3f
 #define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_MAXn 3
-#define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_MAXk 19
+#define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_MAXk 11
 #define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_ATTR 0x1
 #define HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_INI2(n, k) in_dword_masked( \
 		HWIO_GSI_DEBUG_EE_n_EV_k_VP_TABLE_ADDR(n, k), \
@@ -740,17 +733,17 @@
 					   0x00000560 + 0x4 * (n))
 #define HWIO_GSI_UC_TLV_IN_ARGS_n_OFFS(n) (GSI_REG_BASE_OFFS + \
 					   0x00000560 + 0x4 * (n))
-#define HWIO_EE_n_GSI_CH_k_CNTXT_0_ADDR(n, k) (GSI_REG_BASE + 0x0000f000 + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_0_ADDR(n, k) (GSI_REG_BASE + 0x0001c000 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f000 + 0x4000 * (n) + \
+					       0x0001c000 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f000 + 0x4000 * (n) + \
+					       0x0001c000 + 0x4000 * (n) + \
 					       0x80 * (k))
-#define HWIO_EE_n_GSI_CH_k_CNTXT_0_RMSK 0xfff7ffff
+#define HWIO_EE_n_GSI_CH_k_CNTXT_0_RMSK 0xfff7dfff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_0_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_0_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_0_ADDR(n, k), \
@@ -780,8 +773,6 @@
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHSTATE_ERROR_FVAL 0xf
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_ERINDEX_BMSK 0x7c000
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_ERINDEX_SHFT 0xe
-#define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHTYPE_PROTOCOL_MSB_BMSK 0x2000
-#define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHTYPE_PROTOCOL_MSB_SHFT 0xd
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHID_BMSK 0x1f00
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHID_SHFT 0x8
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_EE_BMSK 0xf0
@@ -796,17 +787,17 @@
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHTYPE_PROTOCOL_XHCI_FVAL 0x1
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHTYPE_PROTOCOL_GPI_FVAL 0x2
 #define HWIO_EE_n_GSI_CH_k_CNTXT_0_CHTYPE_PROTOCOL_XDCI_FVAL 0x3
-#define HWIO_EE_n_GSI_CH_k_CNTXT_1_ADDR(n, k) (GSI_REG_BASE + 0x0000f004 + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_1_ADDR(n, k) (GSI_REG_BASE + 0x0001c004 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f004 + 0x4000 * (n) + \
+					       0x0001c004 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f004 + 0x4000 * (n) + \
+					       0x0001c004 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_RMSK 0xffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_1_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_1_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_1_ADDR(n, k), \
@@ -826,17 +817,17 @@
 		HWIO_EE_n_GSI_CH_k_CNTXT_1_INI2(n, k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_R_LENGTH_BMSK 0xffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_1_R_LENGTH_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_CNTXT_2_ADDR(n, k) (GSI_REG_BASE + 0x0000f008 + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_2_ADDR(n, k) (GSI_REG_BASE + 0x0001c008 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f008 + 0x4000 * (n) + \
+					       0x0001c008 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f008 + 0x4000 * (n) + \
+					       0x0001c008 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_2_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_2_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_2_ADDR(n, k), \
@@ -856,17 +847,17 @@
 		HWIO_EE_n_GSI_CH_k_CNTXT_2_INI2(n, k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_R_BASE_ADDR_LSBS_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_2_R_BASE_ADDR_LSBS_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_CNTXT_3_ADDR(n, k) (GSI_REG_BASE + 0x0000f00c + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_3_ADDR(n, k) (GSI_REG_BASE + 0x0001c00c + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f00c + 0x4000 * (n) + \
+					       0x0001c00c + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f00c + 0x4000 * (n) + \
+					       0x0001c00c + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_3_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_3_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_3_ADDR(n, k), \
@@ -886,17 +877,17 @@
 		HWIO_EE_n_GSI_CH_k_CNTXT_3_INI2(n, k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_R_BASE_ADDR_MSBS_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_3_R_BASE_ADDR_MSBS_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_CNTXT_4_ADDR(n, k) (GSI_REG_BASE + 0x0000f010 + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_4_ADDR(n, k) (GSI_REG_BASE + 0x0001c010 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f010 + 0x4000 * (n) + \
+					       0x0001c010 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f010 + 0x4000 * (n) + \
+					       0x0001c010 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_4_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_4_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_4_ADDR(n, k), \
@@ -916,17 +907,17 @@
 		HWIO_EE_n_GSI_CH_k_CNTXT_4_INI2(n, k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_READ_PTR_LSB_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_4_READ_PTR_LSB_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_CNTXT_5_ADDR(n, k) (GSI_REG_BASE + 0x0000f014 + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_5_ADDR(n, k) (GSI_REG_BASE + 0x0001c014 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f014 + 0x4000 * (n) + \
+					       0x0001c014 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f014 + 0x4000 * (n) + \
+					       0x0001c014 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_5_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_5_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_ATTR 0x1
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_5_ADDR(n, k), \
@@ -936,17 +927,17 @@
 		mask)
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_READ_PTR_MSB_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_5_READ_PTR_MSB_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_CNTXT_6_ADDR(n, k) (GSI_REG_BASE + 0x0000f018 + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_6_ADDR(n, k) (GSI_REG_BASE + 0x0001c018 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f018 + 0x4000 * (n) + \
+					       0x0001c018 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f018 + 0x4000 * (n) + \
+					       0x0001c018 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_6_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_6_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_ATTR 0x1
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_6_ADDR(n, k), \
@@ -956,17 +947,17 @@
 		mask)
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_WRITE_PTR_LSB_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_6_WRITE_PTR_LSB_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_CNTXT_7_ADDR(n, k) (GSI_REG_BASE + 0x0000f01c + \
+#define HWIO_EE_n_GSI_CH_k_CNTXT_7_ADDR(n, k) (GSI_REG_BASE + 0x0001c01c + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0000f01c + 0x4000 * (n) + \
+					       0x0001c01c + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0000f01c + 0x4000 * (n) + \
+					       0x0001c01c + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_CNTXT_7_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_CNTXT_7_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_ATTR 0x1
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_CNTXT_7_ADDR(n, k), \
@@ -977,22 +968,22 @@
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_WRITE_PTR_MSB_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_CNTXT_7_WRITE_PTR_MSB_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_ADDR(n, k) (GSI_REG_BASE +	\
-							 0x0000f054 + \
+							 0x0001c054 + \
 							 0x4000 * (n) +	\
 							 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_PHYS(n, \
 						  k) (GSI_REG_BASE_PHYS + \
-						      0x0000f054 + \
+						      0x0001c054 + \
 						      0x4000 * (n) + \
 						      0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_OFFS(n, \
 						  k) (GSI_REG_BASE_OFFS + \
-						      0x0000f054 + \
+						      0x0001c054 + \
 						      0x4000 * (n) + \
 						      0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_RMSK 0xffff
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_ADDR(n, k), \
@@ -1014,22 +1005,22 @@
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_READ_PTR_BMSK 0xffff
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_READ_PTR_READ_PTR_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_ADDR(n, k) (GSI_REG_BASE + \
-							  0x0000f058 + \
+							  0x0001c058 + \
 							  0x4000 * (n) + \
 							  0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_PHYS(n, \
 						   k) (GSI_REG_BASE_PHYS + \
-						       0x0000f058 + \
+						       0x0001c058 + \
 						       0x4000 * (n) + \
 						       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_OFFS(n, \
 						   k) (GSI_REG_BASE_OFFS + \
-						       0x0000f058 + \
+						       0x0001c058 + \
 						       0x4000 * (n) + \
 						       0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_RMSK 0xffff
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_ADDR(n, k), \
@@ -1051,17 +1042,17 @@
 								       k))
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_RE_INTR_DB_BMSK 0xffff
 #define HWIO_EE_n_GSI_CH_k_RE_FETCH_WRITE_PTR_RE_INTR_DB_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_k_QOS_ADDR(n, k) (GSI_REG_BASE + 0x0000f05c + \
+#define HWIO_EE_n_GSI_CH_k_QOS_ADDR(n, k) (GSI_REG_BASE + 0x0001c05c + \
 					   0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_QOS_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					   0x0000f05c + 0x4000 * (n) + \
+					   0x0001c05c + 0x4000 * (n) + \
 					   0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_QOS_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					   0x0000f05c + 0x4000 * (n) + \
+					   0x0001c05c + 0x4000 * (n) + \
 					   0x80 * (k))
-#define HWIO_EE_n_GSI_CH_k_QOS_RMSK 0xff3f0f
+#define HWIO_EE_n_GSI_CH_k_QOS_RMSK 0x70f
 #define HWIO_EE_n_GSI_CH_k_QOS_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_QOS_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_QOS_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_QOS_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_QOS_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_QOS_ADDR(n, k), \
@@ -1077,14 +1068,8 @@
 		mask, \
 		val, \
 		HWIO_EE_n_GSI_CH_k_QOS_INI2(n, k))
-#define HWIO_EE_n_GSI_CH_k_QOS_EMPTY_LVL_THRSHOLD_BMSK 0xff0000
-#define HWIO_EE_n_GSI_CH_k_QOS_EMPTY_LVL_THRSHOLD_SHFT 0x10
-#define HWIO_EE_n_GSI_CH_k_QOS_PREFETCH_MODE_BMSK 0x3c00
-#define HWIO_EE_n_GSI_CH_k_QOS_PREFETCH_MODE_SHFT 0xa
-#define HWIO_EE_n_GSI_CH_k_QOS_PREFETCH_MODE_USE_PREFETCH_BUFS_FVAL 0x0
-#define HWIO_EE_n_GSI_CH_k_QOS_PREFETCH_MODE_ESCAPE_BUF_ONLY_FVAL 0x1
-#define HWIO_EE_n_GSI_CH_k_QOS_PREFETCH_MODE_SMART_PRE_FETCH_FVAL 0x2
-#define HWIO_EE_n_GSI_CH_k_QOS_PREFETCH_MODE_FREE_PRE_FETCH_FVAL 0x3
+#define HWIO_EE_n_GSI_CH_k_QOS_USE_ESCAPE_BUF_ONLY_BMSK 0x400
+#define HWIO_EE_n_GSI_CH_k_QOS_USE_ESCAPE_BUF_ONLY_SHFT 0xa
 #define HWIO_EE_n_GSI_CH_k_QOS_USE_DB_ENG_BMSK 0x200
 #define HWIO_EE_n_GSI_CH_k_QOS_USE_DB_ENG_SHFT 0x9
 #define HWIO_EE_n_GSI_CH_k_QOS_MAX_PREFETCH_BMSK 0x100
@@ -1094,17 +1079,17 @@
 #define HWIO_EE_n_GSI_CH_k_QOS_WRR_WEIGHT_BMSK 0xf
 #define HWIO_EE_n_GSI_CH_k_QOS_WRR_WEIGHT_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_ADDR(n, k) (GSI_REG_BASE +	\
-						 0x0000f060 + 0x4000 * \
+						 0x0001c060 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						 0x0000f060 + 0x4000 * \
+						 0x0001c060 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						 0x0000f060 + 0x4000 * \
+						 0x0001c060 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_SCRATCH_0_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_SCRATCH_0_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_SCRATCH_0_ADDR(n, k), \
@@ -1125,17 +1110,17 @@
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_0_SCRATCH_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_ADDR(n, k) (GSI_REG_BASE +	\
-						 0x0000f064 + 0x4000 * \
+						 0x0001c064 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						 0x0000f064 + 0x4000 * \
+						 0x0001c064 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						 0x0000f064 + 0x4000 * \
+						 0x0001c064 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_SCRATCH_1_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_SCRATCH_1_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_SCRATCH_1_ADDR(n, k), \
@@ -1156,17 +1141,17 @@
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_1_SCRATCH_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_ADDR(n, k) (GSI_REG_BASE +	\
-						 0x0000f068 + 0x4000 * \
+						 0x0001c068 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						 0x0000f068 + 0x4000 * \
+						 0x0001c068 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						 0x0000f068 + 0x4000 * \
+						 0x0001c068 + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_SCRATCH_2_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_SCRATCH_2_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_SCRATCH_2_ADDR(n, k), \
@@ -1187,17 +1172,17 @@
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_2_SCRATCH_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_ADDR(n, k) (GSI_REG_BASE +	\
-						 0x0000f06c + 0x4000 * \
+						 0x0001c06c + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						 0x0000f06c + 0x4000 * \
+						 0x0001c06c + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						 0x0000f06c + 0x4000 * \
+						 0x0001c06c + 0x4000 * \
 						 (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_RMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_MAXn 2
-#define HWIO_EE_n_GSI_CH_k_SCRATCH_3_MAXk 22
+#define HWIO_EE_n_GSI_CH_k_SCRATCH_3_MAXk 16
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_ATTR 0x3
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_GSI_CH_k_SCRATCH_3_ADDR(n, k), \
@@ -1218,28 +1203,28 @@
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_GSI_CH_k_SCRATCH_3_SCRATCH_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_DB_ENG_WRITE_PTR_ADDR(n, k) (GSI_REG_BASE + \
-							0x0000f070 + \
+							0x0001c070 + \
 							0x4000 * (n) + \
 							0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_DB_ENG_WRITE_PTR_PHYS(n, \
 						 k) (GSI_REG_BASE_PHYS + \
-						     0x0000f070 + 0x4000 * \
+						     0x0001c070 + 0x4000 * \
 						     (n) + 0x80 * (k))
 #define HWIO_EE_n_GSI_CH_k_DB_ENG_WRITE_PTR_OFFS(n, \
 						 k) (GSI_REG_BASE_OFFS + \
-						     0x0000f070 + 0x4000 * \
+						     0x0001c070 + 0x4000 * \
 						     (n) + 0x80 * (k))
-#define HWIO_EE_n_EV_CH_k_CNTXT_0_ADDR(n, k) (GSI_REG_BASE + 0x00010000 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_0_ADDR(n, k) (GSI_REG_BASE + 0x0001d000 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010000 + 0x4000 * (n) + \
+					      0x0001d000 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010000 + 0x4000 * (n) + \
+					      0x0001d000 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_RMSK 0xfff1ffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_0_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_0_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_0_ADDR(n, k), \
@@ -1277,17 +1262,17 @@
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_CHTYPE_XHCI_EV_FVAL 0x1
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_CHTYPE_GPI_EV_FVAL 0x2
 #define HWIO_EE_n_EV_CH_k_CNTXT_0_CHTYPE_XDCI_FVAL 0x3
-#define HWIO_EE_n_EV_CH_k_CNTXT_1_ADDR(n, k) (GSI_REG_BASE + 0x00010004 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_1_ADDR(n, k) (GSI_REG_BASE + 0x0001d004 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010004 + 0x4000 * (n) + \
+					      0x0001d004 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010004 + 0x4000 * (n) + \
+					      0x0001d004 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_RMSK 0xffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_1_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_1_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_1_ADDR(n, k), \
@@ -1307,17 +1292,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_1_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_R_LENGTH_BMSK 0xffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_1_R_LENGTH_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_2_ADDR(n, k) (GSI_REG_BASE + 0x00010008 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_2_ADDR(n, k) (GSI_REG_BASE + 0x0001d008 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010008 + 0x4000 * (n) + \
+					      0x0001d008 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010008 + 0x4000 * (n) + \
+					      0x0001d008 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_2_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_2_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_2_ADDR(n, k), \
@@ -1337,17 +1322,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_2_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_R_BASE_ADDR_LSBS_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_2_R_BASE_ADDR_LSBS_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_3_ADDR(n, k) (GSI_REG_BASE + 0x0001000c + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_3_ADDR(n, k) (GSI_REG_BASE + 0x0001d00c + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x0001000c + 0x4000 * (n) + \
+					      0x0001d00c + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x0001000c + 0x4000 * (n) + \
+					      0x0001d00c + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_3_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_3_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_3_ADDR(n, k), \
@@ -1367,17 +1352,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_3_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_R_BASE_ADDR_MSBS_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_3_R_BASE_ADDR_MSBS_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_4_ADDR(n, k) (GSI_REG_BASE + 0x00010010 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_4_ADDR(n, k) (GSI_REG_BASE + 0x0001d010 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010010 + 0x4000 * (n) + \
+					      0x0001d010 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010010 + 0x4000 * (n) + \
+					      0x0001d010 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_4_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_4_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_4_ADDR(n, k), \
@@ -1397,17 +1382,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_4_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_READ_PTR_LSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_4_READ_PTR_LSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_5_ADDR(n, k) (GSI_REG_BASE + 0x00010014 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_5_ADDR(n, k) (GSI_REG_BASE + 0x0001d014 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010014 + 0x4000 * (n) + \
+					      0x0001d014 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010014 + 0x4000 * (n) + \
+					      0x0001d014 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_5_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_5_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_ATTR 0x1
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_5_ADDR(n, k), \
@@ -1417,17 +1402,17 @@
 		mask)
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_READ_PTR_MSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_5_READ_PTR_MSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_6_ADDR(n, k) (GSI_REG_BASE + 0x00010018 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_6_ADDR(n, k) (GSI_REG_BASE + 0x0001d018 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010018 + 0x4000 * (n) + \
+					      0x0001d018 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010018 + 0x4000 * (n) + \
+					      0x0001d018 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_6_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_6_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_ATTR 0x1
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_6_ADDR(n, k), \
@@ -1437,17 +1422,17 @@
 		mask)
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_WRITE_PTR_LSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_6_WRITE_PTR_LSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_7_ADDR(n, k) (GSI_REG_BASE + 0x0001001c + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_7_ADDR(n, k) (GSI_REG_BASE + 0x0001d01c + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x0001001c + 0x4000 * (n) + \
+					      0x0001d01c + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x0001001c + 0x4000 * (n) + \
+					      0x0001d01c + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_7_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_7_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_ATTR 0x1
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_7_ADDR(n, k), \
@@ -1457,17 +1442,17 @@
 		mask)
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_WRITE_PTR_MSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_7_WRITE_PTR_MSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_8_ADDR(n, k) (GSI_REG_BASE + 0x00010020 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_8_ADDR(n, k) (GSI_REG_BASE + 0x0001d020 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010020 + 0x4000 * (n) + \
+					      0x0001d020 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010020 + 0x4000 * (n) + \
+					      0x0001d020 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_8_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_8_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_8_ADDR(n, k), \
@@ -1491,17 +1476,17 @@
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_INT_MODC_SHFT 0x10
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_INT_MODT_BMSK 0xffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_8_INT_MODT_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_9_ADDR(n, k) (GSI_REG_BASE + 0x00010024 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_9_ADDR(n, k) (GSI_REG_BASE + 0x0001d024 + \
 					      0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					      0x00010024 + 0x4000 * (n) + \
+					      0x0001d024 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					      0x00010024 + 0x4000 * (n) + \
+					      0x0001d024 + 0x4000 * (n) + \
 					      0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_9_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_9_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_9_ADDR(n, k), \
@@ -1521,17 +1506,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_9_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_INTVEC_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_9_INTVEC_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_10_ADDR(n, k) (GSI_REG_BASE + 0x00010028 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_10_ADDR(n, k) (GSI_REG_BASE + 0x0001d028 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x00010028 + 0x4000 * (n) + \
+					       0x0001d028 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x00010028 + 0x4000 * (n) + \
+					       0x0001d028 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_10_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_10_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_10_ADDR(n, k), \
@@ -1551,17 +1536,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_10_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_MSI_ADDR_LSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_10_MSI_ADDR_LSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_11_ADDR(n, k) (GSI_REG_BASE + 0x0001002c + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_11_ADDR(n, k) (GSI_REG_BASE + 0x0001d02c + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x0001002c + 0x4000 * (n) + \
+					       0x0001d02c + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x0001002c + 0x4000 * (n) + \
+					       0x0001d02c + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_11_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_11_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_11_ADDR(n, k), \
@@ -1581,17 +1566,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_11_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_MSI_ADDR_MSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_11_MSI_ADDR_MSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_12_ADDR(n, k) (GSI_REG_BASE + 0x00010030 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_12_ADDR(n, k) (GSI_REG_BASE + 0x0001d030 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x00010030 + 0x4000 * (n) + \
+					       0x0001d030 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x00010030 + 0x4000 * (n) + \
+					       0x0001d030 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_12_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_12_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_12_ADDR(n, k), \
@@ -1611,17 +1596,17 @@
 		HWIO_EE_n_EV_CH_k_CNTXT_12_INI2(n, k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_RP_UPDATE_ADDR_LSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_12_RP_UPDATE_ADDR_LSB_SHFT 0x0
-#define HWIO_EE_n_EV_CH_k_CNTXT_13_ADDR(n, k) (GSI_REG_BASE + 0x00010034 + \
+#define HWIO_EE_n_EV_CH_k_CNTXT_13_ADDR(n, k) (GSI_REG_BASE + 0x0001d034 + \
 					       0x4000 * (n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-					       0x00010034 + 0x4000 * (n) + \
+					       0x0001d034 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-					       0x00010034 + 0x4000 * (n) + \
+					       0x0001d034 + 0x4000 * (n) + \
 					       0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_MAXn 2
-#define HWIO_EE_n_EV_CH_k_CNTXT_13_MAXk 19
+#define HWIO_EE_n_EV_CH_k_CNTXT_13_MAXk 11
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_INI2(n, k) in_dword_masked( \
 		HWIO_EE_n_EV_CH_k_CNTXT_13_ADDR(n, k), \
@@ -1642,17 +1627,17 @@
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_RP_UPDATE_ADDR_MSB_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_CNTXT_13_RP_UPDATE_ADDR_MSB_SHFT 0x0
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_ADDR(n, k) (GSI_REG_BASE + \
-						0x00010048 + 0x4000 * \
+						0x0001d048 + 0x4000 * \
 						(n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						0x00010048 + 0x4000 * \
+						0x0001d048 + 0x4000 * \
 						(n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						0x00010048 + 0x4000 * \
+						0x0001d048 + 0x4000 * \
 						(n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_MAXn 2
-#define HWIO_EE_n_EV_CH_k_SCRATCH_0_MAXk 19
+#define HWIO_EE_n_EV_CH_k_SCRATCH_0_MAXk 11
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_INI2(n, k) in_dword_masked(	\
 		HWIO_EE_n_EV_CH_k_SCRATCH_0_ADDR(n, k),	\
@@ -1673,17 +1658,17 @@
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_SCRATCH_0_SCRATCH_SHFT 0x0
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_ADDR(n, k) (GSI_REG_BASE + \
-						0x0001004c + 0x4000 * \
+						0x0001d04c + 0x4000 * \
 						(n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						0x0001004c + 0x4000 * \
+						0x0001d04c + 0x4000 * \
 						(n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						0x0001004c + 0x4000 * \
+						0x0001d04c + 0x4000 * \
 						(n) + 0x80 * (k))
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_RMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_MAXn 2
-#define HWIO_EE_n_EV_CH_k_SCRATCH_1_MAXk 19
+#define HWIO_EE_n_EV_CH_k_SCRATCH_1_MAXk 11
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_ATTR 0x3
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_INI2(n, k) in_dword_masked(	\
 		HWIO_EE_n_EV_CH_k_SCRATCH_1_ADDR(n, k),	\
@@ -1704,46 +1689,46 @@
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_EV_CH_k_SCRATCH_1_SCRATCH_SHFT 0x0
 #define HWIO_EE_n_GSI_CH_k_DOORBELL_0_ADDR(n, k) (GSI_REG_BASE + \
-						  0x00011000 + 0x4000 *	\
+						  0x0001e000 + 0x4000 *	\
 						  (n) + 0x8 * (k))
 #define HWIO_EE_n_GSI_CH_k_DOORBELL_0_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						  0x00011000 + 0x4000 *	\
+						  0x0001e000 + 0x4000 *	\
 						  (n) + 0x8 * (k))
 #define HWIO_EE_n_GSI_CH_k_DOORBELL_0_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						  0x00011000 + 0x4000 *	\
+						  0x0001e000 + 0x4000 *	\
 						  (n) + 0x8 * (k))
 #define HWIO_EE_n_GSI_CH_k_DOORBELL_1_ADDR(n, k) (GSI_REG_BASE + \
-						  0x00011004 + 0x4000 *	\
+						  0x0001e004 + 0x4000 *	\
 						  (n) + 0x8 * (k))
 #define HWIO_EE_n_GSI_CH_k_DOORBELL_1_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						  0x00011004 + 0x4000 *	\
+						  0x0001e004 + 0x4000 *	\
 						  (n) + 0x8 * (k))
 #define HWIO_EE_n_GSI_CH_k_DOORBELL_1_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						  0x00011004 + 0x4000 *	\
+						  0x0001e004 + 0x4000 *	\
 						  (n) + 0x8 * (k))
 #define HWIO_EE_n_EV_CH_k_DOORBELL_0_ADDR(n, k) (GSI_REG_BASE +	\
-						 0x00011100 + 0x4000 * \
+						 0x0001e100 + 0x4000 * \
 						 (n) + 0x8 * (k))
 #define HWIO_EE_n_EV_CH_k_DOORBELL_0_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						 0x00011100 + 0x4000 * \
+						 0x0001e100 + 0x4000 * \
 						 (n) + 0x8 * (k))
 #define HWIO_EE_n_EV_CH_k_DOORBELL_0_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						 0x00011100 + 0x4000 * \
+						 0x0001e100 + 0x4000 * \
 						 (n) + 0x8 * (k))
 #define HWIO_EE_n_EV_CH_k_DOORBELL_1_ADDR(n, k) (GSI_REG_BASE +	\
-						 0x00011104 + 0x4000 * \
+						 0x0001e104 + 0x4000 * \
 						 (n) + 0x8 * (k))
 #define HWIO_EE_n_EV_CH_k_DOORBELL_1_PHYS(n, k) (GSI_REG_BASE_PHYS + \
-						 0x00011104 + 0x4000 * \
+						 0x0001e104 + 0x4000 * \
 						 (n) + 0x8 * (k))
 #define HWIO_EE_n_EV_CH_k_DOORBELL_1_OFFS(n, k) (GSI_REG_BASE_OFFS + \
-						 0x00011104 + 0x4000 * \
+						 0x0001e104 + 0x4000 * \
 						 (n) + 0x8 * (k))
-#define HWIO_EE_n_GSI_STATUS_ADDR(n) (GSI_REG_BASE + 0x00012000 + 0x4000 * \
+#define HWIO_EE_n_GSI_STATUS_ADDR(n) (GSI_REG_BASE + 0x0001f000 + 0x4000 * \
 				      (n))
-#define HWIO_EE_n_GSI_STATUS_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012000 + \
+#define HWIO_EE_n_GSI_STATUS_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f000 + \
 				      0x4000 * (n))
-#define HWIO_EE_n_GSI_STATUS_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012000 + \
+#define HWIO_EE_n_GSI_STATUS_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f000 + \
 				      0x4000 * (n))
 #define HWIO_EE_n_GSI_STATUS_RMSK 0x1
 #define HWIO_EE_n_GSI_STATUS_MAXn 2
@@ -1756,65 +1741,65 @@
 		mask)
 #define HWIO_EE_n_GSI_STATUS_ENABLED_BMSK 0x1
 #define HWIO_EE_n_GSI_STATUS_ENABLED_SHFT 0x0
-#define HWIO_EE_n_GSI_CH_CMD_ADDR(n) (GSI_REG_BASE + 0x00012008 + 0x4000 * \
+#define HWIO_EE_n_GSI_CH_CMD_ADDR(n) (GSI_REG_BASE + 0x0001f008 + 0x4000 * \
 				      (n))
-#define HWIO_EE_n_GSI_CH_CMD_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012008 + \
+#define HWIO_EE_n_GSI_CH_CMD_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f008 + \
 				      0x4000 * (n))
-#define HWIO_EE_n_GSI_CH_CMD_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012008 + \
+#define HWIO_EE_n_GSI_CH_CMD_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f008 + \
 				      0x4000 * (n))
-#define HWIO_EE_n_EV_CH_CMD_ADDR(n) (GSI_REG_BASE + 0x00012010 + 0x4000 * \
+#define HWIO_EE_n_EV_CH_CMD_ADDR(n) (GSI_REG_BASE + 0x0001f010 + 0x4000 * \
 				     (n))
-#define HWIO_EE_n_EV_CH_CMD_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012010 + \
+#define HWIO_EE_n_EV_CH_CMD_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f010 + \
 				     0x4000 * (n))
-#define HWIO_EE_n_EV_CH_CMD_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012010 + \
+#define HWIO_EE_n_EV_CH_CMD_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f010 + \
 				     0x4000 * (n))
-#define HWIO_EE_n_GSI_EE_GENERIC_CMD_ADDR(n) (GSI_REG_BASE + 0x00012018 + \
+#define HWIO_EE_n_GSI_EE_GENERIC_CMD_ADDR(n) (GSI_REG_BASE + 0x0001f018 + \
 					      0x4000 * (n))
 #define HWIO_EE_n_GSI_EE_GENERIC_CMD_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x00012018 + 0x4000 * (n))
+					      0x0001f018 + 0x4000 * (n))
 #define HWIO_EE_n_GSI_EE_GENERIC_CMD_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x00012018 + 0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_0_ADDR(n) (GSI_REG_BASE + 0x00012038 + \
+					      0x0001f018 + 0x4000 * (n))
+#define HWIO_EE_n_GSI_HW_PARAM_0_ADDR(n) (GSI_REG_BASE + 0x0001f038 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_0_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012038 + \
+#define HWIO_EE_n_GSI_HW_PARAM_0_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f038 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_0_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012038 + \
+#define HWIO_EE_n_GSI_HW_PARAM_0_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f038 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_1_ADDR(n) (GSI_REG_BASE + 0x0001203c + \
+#define HWIO_EE_n_GSI_HW_PARAM_1_ADDR(n) (GSI_REG_BASE + 0x0001f03c + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_1_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001203c + \
+#define HWIO_EE_n_GSI_HW_PARAM_1_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f03c + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_1_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001203c + \
+#define HWIO_EE_n_GSI_HW_PARAM_1_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f03c + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_2_ADDR(n) (GSI_REG_BASE + 0x00012040 + \
+#define HWIO_EE_n_GSI_HW_PARAM_2_ADDR(n) (GSI_REG_BASE + 0x0001f040 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_2_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012040 + \
+#define HWIO_EE_n_GSI_HW_PARAM_2_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f040 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_2_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012040 + \
+#define HWIO_EE_n_GSI_HW_PARAM_2_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f040 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_SW_VERSION_ADDR(n) (GSI_REG_BASE + 0x00012044 + \
+#define HWIO_EE_n_GSI_SW_VERSION_ADDR(n) (GSI_REG_BASE + 0x0001f044 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_SW_VERSION_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012044 + \
+#define HWIO_EE_n_GSI_SW_VERSION_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f044 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_SW_VERSION_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012044 + \
+#define HWIO_EE_n_GSI_SW_VERSION_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f044 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_MCS_CODE_VER_ADDR(n) (GSI_REG_BASE + 0x00012048 +	\
+#define HWIO_EE_n_GSI_MCS_CODE_VER_ADDR(n) (GSI_REG_BASE + 0x0001f048 +	\
 					    0x4000 * (n))
 #define HWIO_EE_n_GSI_MCS_CODE_VER_PHYS(n) (GSI_REG_BASE_PHYS +	\
-					    0x00012048 + 0x4000 * (n))
+					    0x0001f048 + 0x4000 * (n))
 #define HWIO_EE_n_GSI_MCS_CODE_VER_OFFS(n) (GSI_REG_BASE_OFFS +	\
-					    0x00012048 + 0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_3_ADDR(n) (GSI_REG_BASE + 0x0001204c + \
+					    0x0001f048 + 0x4000 * (n))
+#define HWIO_EE_n_GSI_HW_PARAM_3_ADDR(n) (GSI_REG_BASE + 0x0001f04c + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_3_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001204c + \
+#define HWIO_EE_n_GSI_HW_PARAM_3_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f04c + \
 					  0x4000 * (n))
-#define HWIO_EE_n_GSI_HW_PARAM_3_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001204c + \
+#define HWIO_EE_n_GSI_HW_PARAM_3_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f04c + \
 					  0x4000 * (n))
-#define HWIO_EE_n_CNTXT_TYPE_IRQ_ADDR(n) (GSI_REG_BASE + 0x00012080 + \
+#define HWIO_EE_n_CNTXT_TYPE_IRQ_ADDR(n) (GSI_REG_BASE + 0x0001f080 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_CNTXT_TYPE_IRQ_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012080 + \
+#define HWIO_EE_n_CNTXT_TYPE_IRQ_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f080 + \
 					  0x4000 * (n))
-#define HWIO_EE_n_CNTXT_TYPE_IRQ_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012080 + \
+#define HWIO_EE_n_CNTXT_TYPE_IRQ_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f080 + \
 					  0x4000 * (n))
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_RMSK 0x7f
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MAXn 2
@@ -1839,12 +1824,12 @@
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_EV_CTRL_SHFT 0x1
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_CH_CTRL_BMSK 0x1
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_CH_CTRL_SHFT 0x0
-#define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_ADDR(n) (GSI_REG_BASE + 0x00012088 + \
+#define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_ADDR(n) (GSI_REG_BASE + 0x0001f088 + \
 					      0x4000 * (n))
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x00012088 + 0x4000 * (n))
+					      0x0001f088 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x00012088 + 0x4000 * (n))
+					      0x0001f088 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_RMSK 0x7f
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_MAXn 2
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_ATTR 0x3
@@ -1879,11 +1864,11 @@
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_CH_CTRL_BMSK 0x1
 #define HWIO_EE_n_CNTXT_TYPE_IRQ_MSK_CH_CTRL_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_ADDR(n) (GSI_REG_BASE + \
-						0x00012090 + 0x4000 * (n))
+						0x0001f090 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_PHYS(n) (GSI_REG_BASE_PHYS + \
-						0x00012090 + 0x4000 * (n))
+						0x0001f090 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_OFFS(n) (GSI_REG_BASE_OFFS + \
-						0x00012090 + 0x4000 * (n))
+						0x0001f090 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_ATTR 0x1
@@ -1895,12 +1880,12 @@
 		mask)
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_GSI_CH_BIT_MAP_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_GSI_CH_BIT_MAP_SHFT 0x0
-#define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_ADDR(n) (GSI_REG_BASE + 0x00012094 + \
+#define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_ADDR(n) (GSI_REG_BASE + 0x0001f094 + \
 					       0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_PHYS(n) (GSI_REG_BASE_PHYS + \
-					       0x00012094 + 0x4000 * (n))
+					       0x0001f094 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_OFFS(n) (GSI_REG_BASE_OFFS + \
-					       0x00012094 + 0x4000 * (n))
+					       0x0001f094 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_ATTR 0x1
@@ -1913,15 +1898,15 @@
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_EV_CH_BIT_MAP_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_EV_CH_BIT_MAP_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_ADDR(n) (GSI_REG_BASE + \
-						    0x00012098 + 0x4000 * \
+						    0x0001f098 + 0x4000 * \
 						    (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_PHYS(n) (GSI_REG_BASE_PHYS +	\
-						    0x00012098 + 0x4000 * \
+						    0x0001f098 + 0x4000 * \
 						    (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_OFFS(n) (GSI_REG_BASE_OFFS +	\
-						    0x00012098 + 0x4000 * \
+						    0x0001f098 + 0x4000 * \
 						    (n))
-#define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_RMSK 0x7fffff
+#define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_RMSK 0x1ffff
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_ATTR 0x3
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_INI(n) in_dword_masked( \
@@ -1940,19 +1925,18 @@
 		mask, \
 		val, \
 		HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_INI(n))
-#define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_GSI_CH_BIT_MAP_MSK_BMSK \
-	0x7fffff
+#define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_GSI_CH_BIT_MAP_MSK_BMSK 0x1ffff
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_MSK_GSI_CH_BIT_MAP_MSK_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_ADDR(n) (GSI_REG_BASE + \
-						   0x0001209c + 0x4000 * \
+						   0x0001f09c + 0x4000 * \
 						   (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_PHYS(n) (GSI_REG_BASE_PHYS + \
-						   0x0001209c + 0x4000 * \
+						   0x0001f09c + 0x4000 * \
 						   (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_OFFS(n) (GSI_REG_BASE_OFFS + \
-						   0x0001209c + 0x4000 * \
+						   0x0001f09c + 0x4000 * \
 						   (n))
-#define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_RMSK 0xfffff
+#define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_RMSK 0xfff
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_ATTR 0x3
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_INI(n) in_dword_masked( \
@@ -1971,16 +1955,16 @@
 		mask, \
 		val, \
 		HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_INI(n))
-#define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_EV_CH_BIT_MAP_MSK_BMSK 0xfffff
+#define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_EV_CH_BIT_MAP_MSK_BMSK 0xfff
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_MSK_EV_CH_BIT_MAP_MSK_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_ADDR(n) (GSI_REG_BASE + \
-						    0x000120a0 + 0x4000 * \
+						    0x0001f0a0 + 0x4000 * \
 						    (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_PHYS(n) (GSI_REG_BASE_PHYS +	\
-						    0x000120a0 + 0x4000 * \
+						    0x0001f0a0 + 0x4000 * \
 						    (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_OFFS(n) (GSI_REG_BASE_OFFS +	\
-						    0x000120a0 + 0x4000 * \
+						    0x0001f0a0 + 0x4000 * \
 						    (n))
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_MAXn 2
@@ -1991,13 +1975,13 @@
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_GSI_CH_BIT_MAP_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_GSI_CH_IRQ_CLR_GSI_CH_BIT_MAP_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_ADDR(n) (GSI_REG_BASE + \
-						   0x000120a4 + 0x4000 * \
+						   0x0001f0a4 + 0x4000 * \
 						   (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_PHYS(n) (GSI_REG_BASE_PHYS + \
-						   0x000120a4 + 0x4000 * \
+						   0x0001f0a4 + 0x4000 * \
 						   (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_OFFS(n) (GSI_REG_BASE_OFFS + \
-						   0x000120a4 + 0x4000 * \
+						   0x0001f0a4 + 0x4000 * \
 						   (n))
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_MAXn 2
@@ -2007,12 +1991,12 @@
 		val)
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_EV_CH_BIT_MAP_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_EV_CH_IRQ_CLR_EV_CH_BIT_MAP_SHFT 0x0
-#define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_ADDR(n) (GSI_REG_BASE + 0x000120b0 + \
+#define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_ADDR(n) (GSI_REG_BASE + 0x0001f0b0 + \
 					      0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x000120b0 + 0x4000 * (n))
+					      0x0001f0b0 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x000120b0 + 0x4000 * (n))
+					      0x0001f0b0 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_ATTR 0x1
@@ -2025,12 +2009,12 @@
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_EV_CH_BIT_MAP_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_EV_CH_BIT_MAP_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_ADDR(n) (GSI_REG_BASE + \
-						  0x000120b8 + 0x4000 * (n))
+						  0x0001f0b8 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_PHYS(n) (GSI_REG_BASE_PHYS + \
-						  0x000120b8 + 0x4000 * (n))
+						  0x0001f0b8 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_OFFS(n) (GSI_REG_BASE_OFFS + \
-						  0x000120b8 + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_RMSK 0xfffff
+						  0x0001f0b8 + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_RMSK 0xfff
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_ATTR 0x3
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_INI(n) in_dword_masked( \
@@ -2049,14 +2033,14 @@
 		mask, \
 		val, \
 		HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_INI(n))
-#define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_EV_CH_BIT_MAP_MSK_BMSK 0xfffff
+#define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_EV_CH_BIT_MAP_MSK_BMSK 0xfff
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_MSK_EV_CH_BIT_MAP_MSK_SHFT 0x0
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_ADDR(n) (GSI_REG_BASE + \
-						  0x000120c0 + 0x4000 * (n))
+						  0x0001f0c0 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_PHYS(n) (GSI_REG_BASE_PHYS + \
-						  0x000120c0 + 0x4000 * (n))
+						  0x0001f0c0 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_OFFS(n) (GSI_REG_BASE_OFFS + \
-						  0x000120c0 + 0x4000 * (n))
+						  0x0001f0c0 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_MAXn 2
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_ATTR 0x2
@@ -2065,12 +2049,12 @@
 		val)
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_EV_CH_BIT_MAP_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SRC_IEOB_IRQ_CLR_EV_CH_BIT_MAP_SHFT 0x0
-#define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_ADDR(n) (GSI_REG_BASE + 0x00012100 + \
+#define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_ADDR(n) (GSI_REG_BASE + 0x0001f100 + \
 					       0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_PHYS(n) (GSI_REG_BASE_PHYS + \
-					       0x00012100 + 0x4000 * (n))
+					       0x0001f100 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_OFFS(n) (GSI_REG_BASE_OFFS + \
-					       0x00012100 + 0x4000 * (n))
+					       0x0001f100 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_RMSK 0xf
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_MAXn 2
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_ATTR 0x1
@@ -2088,24 +2072,24 @@
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_GP_INT1_SHFT 0x1
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_ERROR_INT_BMSK 0x1
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_STTS_ERROR_INT_SHFT 0x0
-#define HWIO_EE_n_CNTXT_GLOB_IRQ_EN_ADDR(n) (GSI_REG_BASE + 0x00012108 + \
+#define HWIO_EE_n_CNTXT_GLOB_IRQ_EN_ADDR(n) (GSI_REG_BASE + 0x0001f108 + \
 					     0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_EN_PHYS(n) (GSI_REG_BASE_PHYS + \
-					     0x00012108 + 0x4000 * (n))
+					     0x0001f108 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_EN_OFFS(n) (GSI_REG_BASE_OFFS + \
-					     0x00012108 + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_GLOB_IRQ_CLR_ADDR(n) (GSI_REG_BASE + 0x00012110 + \
+					     0x0001f108 + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_GLOB_IRQ_CLR_ADDR(n) (GSI_REG_BASE + 0x0001f110 + \
 					      0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_CLR_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x00012110 + 0x4000 * (n))
+					      0x0001f110 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GLOB_IRQ_CLR_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x00012110 + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_ADDR(n) (GSI_REG_BASE + 0x00012118 + \
+					      0x0001f110 + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_ADDR(n) (GSI_REG_BASE + 0x0001f118 + \
 					      0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x00012118 + 0x4000 * (n))
+					      0x0001f118 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x00012118 + 0x4000 * (n))
+					      0x0001f118 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_RMSK 0xf
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_MAXn 2
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_ATTR 0x1
@@ -2123,110 +2107,47 @@
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_GSI_BUS_ERROR_SHFT 0x1
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_GSI_BREAK_POINT_BMSK 0x1
 #define HWIO_EE_n_CNTXT_GSI_IRQ_STTS_GSI_BREAK_POINT_SHFT 0x0
-#define HWIO_EE_n_CNTXT_GSI_IRQ_EN_ADDR(n) (GSI_REG_BASE + 0x00012120 +	\
+#define HWIO_EE_n_CNTXT_GSI_IRQ_EN_ADDR(n) (GSI_REG_BASE + 0x0001f120 +	\
 					    0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_EN_PHYS(n) (GSI_REG_BASE_PHYS +	\
-					    0x00012120 + 0x4000 * (n))
+					    0x0001f120 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_EN_OFFS(n) (GSI_REG_BASE_OFFS +	\
-					    0x00012120 + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_GSI_IRQ_CLR_ADDR(n) (GSI_REG_BASE + 0x00012128 + \
+					    0x0001f120 + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_GSI_IRQ_CLR_ADDR(n) (GSI_REG_BASE + 0x0001f128 + \
 					     0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_CLR_PHYS(n) (GSI_REG_BASE_PHYS + \
-					     0x00012128 + 0x4000 * (n))
+					     0x0001f128 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_GSI_IRQ_CLR_OFFS(n) (GSI_REG_BASE_OFFS + \
-					     0x00012128 + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_INTSET_ADDR(n) (GSI_REG_BASE + 0x00012180 + \
+					     0x0001f128 + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_INTSET_ADDR(n) (GSI_REG_BASE + 0x0001f180 + \
 					0x4000 * (n))
-#define HWIO_EE_n_CNTXT_INTSET_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012180 + \
+#define HWIO_EE_n_CNTXT_INTSET_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f180 + \
 					0x4000 * (n))
-#define HWIO_EE_n_CNTXT_INTSET_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012180 + \
+#define HWIO_EE_n_CNTXT_INTSET_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f180 + \
 					0x4000 * (n))
-#define HWIO_EE_n_CNTXT_INTSET_RMSK 0x1
-#define HWIO_EE_n_CNTXT_INTSET_MAXn 2
-#define HWIO_EE_n_CNTXT_INTSET_ATTR 0x3
-#define HWIO_EE_n_CNTXT_INTSET_INI(n) in_dword_masked( \
-		HWIO_EE_n_CNTXT_INTSET_ADDR(n),	\
-		HWIO_EE_n_CNTXT_INTSET_RMSK)
-#define HWIO_EE_n_CNTXT_INTSET_INMI(n, mask) in_dword_masked( \
-		HWIO_EE_n_CNTXT_INTSET_ADDR(n),	\
-		mask)
-#define HWIO_EE_n_CNTXT_INTSET_OUTI(n, val) out_dword( \
-		HWIO_EE_n_CNTXT_INTSET_ADDR(n),	\
-		val)
-#define HWIO_EE_n_CNTXT_INTSET_OUTMI(n, mask, val) out_dword_masked_ns(	\
-		HWIO_EE_n_CNTXT_INTSET_ADDR(n),	\
-		mask, \
-		val, \
-		HWIO_EE_n_CNTXT_INTSET_INI(n))
-#define HWIO_EE_n_CNTXT_INTSET_INTYPE_BMSK 0x1
-#define HWIO_EE_n_CNTXT_INTSET_INTYPE_SHFT 0x0
-#define HWIO_EE_n_CNTXT_INTSET_INTYPE_MSI_FVAL 0x0
-#define HWIO_EE_n_CNTXT_INTSET_INTYPE_IRQ_FVAL 0x1
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_ADDR(n) (GSI_REG_BASE + 0x00012188 + \
+#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_ADDR(n) (GSI_REG_BASE + 0x0001f188 + \
 					      0x4000 * (n))
 #define HWIO_EE_n_CNTXT_MSI_BASE_LSB_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x00012188 + 0x4000 * (n))
+					      0x0001f188 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_MSI_BASE_LSB_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x00012188 + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_RMSK 0xffffffff
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_MAXn 2
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_ATTR 0x3
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_INI(n) in_dword_masked( \
-		HWIO_EE_n_CNTXT_MSI_BASE_LSB_ADDR(n), \
-		HWIO_EE_n_CNTXT_MSI_BASE_LSB_RMSK)
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_INMI(n, mask) in_dword_masked( \
-		HWIO_EE_n_CNTXT_MSI_BASE_LSB_ADDR(n), \
-		mask)
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_OUTI(n, val) out_dword( \
-		HWIO_EE_n_CNTXT_MSI_BASE_LSB_ADDR(n), \
-		val)
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_OUTMI(n, mask, \
-					   val) out_dword_masked_ns( \
-		HWIO_EE_n_CNTXT_MSI_BASE_LSB_ADDR( \
-			n), \
-		mask, \
-		val, \
-		HWIO_EE_n_CNTXT_MSI_BASE_LSB_INI(n))
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_MSI_ADDR_LSB_BMSK 0xffffffff
-#define HWIO_EE_n_CNTXT_MSI_BASE_LSB_MSI_ADDR_LSB_SHFT 0x0
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_ADDR(n) (GSI_REG_BASE + 0x0001218c + \
+					      0x0001f188 + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_ADDR(n) (GSI_REG_BASE + 0x0001f18c + \
 					      0x4000 * (n))
 #define HWIO_EE_n_CNTXT_MSI_BASE_MSB_PHYS(n) (GSI_REG_BASE_PHYS + \
-					      0x0001218c + 0x4000 * (n))
+					      0x0001f18c + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_MSI_BASE_MSB_OFFS(n) (GSI_REG_BASE_OFFS + \
-					      0x0001218c + 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_RMSK 0xffffffff
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_MAXn 2
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_ATTR 0x3
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_INI(n) in_dword_masked( \
-		HWIO_EE_n_CNTXT_MSI_BASE_MSB_ADDR(n), \
-		HWIO_EE_n_CNTXT_MSI_BASE_MSB_RMSK)
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_INMI(n, mask) in_dword_masked( \
-		HWIO_EE_n_CNTXT_MSI_BASE_MSB_ADDR(n), \
-		mask)
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_OUTI(n, val) out_dword( \
-		HWIO_EE_n_CNTXT_MSI_BASE_MSB_ADDR(n), \
-		val)
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_OUTMI(n, mask, \
-					   val) out_dword_masked_ns( \
-		HWIO_EE_n_CNTXT_MSI_BASE_MSB_ADDR( \
-			n), \
-		mask, \
-		val, \
-		HWIO_EE_n_CNTXT_MSI_BASE_MSB_INI(n))
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_MSI_ADDR_MSB_BMSK 0xffffffff
-#define HWIO_EE_n_CNTXT_MSI_BASE_MSB_MSI_ADDR_MSB_SHFT 0x0
-#define HWIO_EE_n_CNTXT_INT_VEC_ADDR(n) (GSI_REG_BASE + 0x00012190 + \
+					      0x0001f18c + 0x4000 * (n))
+#define HWIO_EE_n_CNTXT_INT_VEC_ADDR(n) (GSI_REG_BASE + 0x0001f190 + \
 					 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_INT_VEC_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012190 + \
+#define HWIO_EE_n_CNTXT_INT_VEC_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f190 + \
 					 0x4000 * (n))
-#define HWIO_EE_n_CNTXT_INT_VEC_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012190 + \
+#define HWIO_EE_n_CNTXT_INT_VEC_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f190 + \
 					 0x4000 * (n))
-#define HWIO_EE_n_ERROR_LOG_ADDR(n) (GSI_REG_BASE + 0x00012200 + 0x4000 * \
+#define HWIO_EE_n_ERROR_LOG_ADDR(n) (GSI_REG_BASE + 0x0001f200 + 0x4000 * \
 				     (n))
-#define HWIO_EE_n_ERROR_LOG_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012200 + \
+#define HWIO_EE_n_ERROR_LOG_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f200 + \
 				     0x4000 * (n))
-#define HWIO_EE_n_ERROR_LOG_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012200 + \
+#define HWIO_EE_n_ERROR_LOG_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f200 + \
 				     0x4000 * (n))
 #define HWIO_EE_n_ERROR_LOG_RMSK 0xffffffff
 #define HWIO_EE_n_ERROR_LOG_MAXn 2
@@ -2247,11 +2168,11 @@
 		HWIO_EE_n_ERROR_LOG_INI(n))
 #define HWIO_EE_n_ERROR_LOG_ERROR_LOG_BMSK 0xffffffff
 #define HWIO_EE_n_ERROR_LOG_ERROR_LOG_SHFT 0x0
-#define HWIO_EE_n_ERROR_LOG_CLR_ADDR(n) (GSI_REG_BASE + 0x00012210 + \
+#define HWIO_EE_n_ERROR_LOG_CLR_ADDR(n) (GSI_REG_BASE + 0x0001f210 + \
 					 0x4000 * (n))
-#define HWIO_EE_n_ERROR_LOG_CLR_PHYS(n) (GSI_REG_BASE_PHYS + 0x00012210 + \
+#define HWIO_EE_n_ERROR_LOG_CLR_PHYS(n) (GSI_REG_BASE_PHYS + 0x0001f210 + \
 					 0x4000 * (n))
-#define HWIO_EE_n_ERROR_LOG_CLR_OFFS(n) (GSI_REG_BASE_OFFS + 0x00012210 + \
+#define HWIO_EE_n_ERROR_LOG_CLR_OFFS(n) (GSI_REG_BASE_OFFS + 0x0001f210 + \
 					 0x4000 * (n))
 #define HWIO_EE_n_ERROR_LOG_CLR_RMSK 0xffffffff
 #define HWIO_EE_n_ERROR_LOG_CLR_MAXn 2
@@ -2261,12 +2182,12 @@
 		val)
 #define HWIO_EE_n_ERROR_LOG_CLR_ERROR_LOG_CLR_BMSK 0xffffffff
 #define HWIO_EE_n_ERROR_LOG_CLR_ERROR_LOG_CLR_SHFT 0x0
-#define HWIO_EE_n_CNTXT_SCRATCH_0_ADDR(n) (GSI_REG_BASE + 0x00012400 + \
+#define HWIO_EE_n_CNTXT_SCRATCH_0_ADDR(n) (GSI_REG_BASE + 0x0001f400 + \
 					   0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SCRATCH_0_PHYS(n) (GSI_REG_BASE_PHYS + \
-					   0x00012400 + 0x4000 * (n))
+					   0x0001f400 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SCRATCH_0_OFFS(n) (GSI_REG_BASE_OFFS + \
-					   0x00012400 + 0x4000 * (n))
+					   0x0001f400 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SCRATCH_0_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SCRATCH_0_MAXn 2
 #define HWIO_EE_n_CNTXT_SCRATCH_0_ATTR 0x3
@@ -2286,12 +2207,12 @@
 		HWIO_EE_n_CNTXT_SCRATCH_0_INI(n))
 #define HWIO_EE_n_CNTXT_SCRATCH_0_SCRATCH_BMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SCRATCH_0_SCRATCH_SHFT 0x0
-#define HWIO_EE_n_CNTXT_SCRATCH_1_ADDR(n) (GSI_REG_BASE + 0x00012404 + \
+#define HWIO_EE_n_CNTXT_SCRATCH_1_ADDR(n) (GSI_REG_BASE + 0x0001f404 + \
 					   0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SCRATCH_1_PHYS(n) (GSI_REG_BASE_PHYS + \
-					   0x00012404 + 0x4000 * (n))
+					   0x0001f404 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SCRATCH_1_OFFS(n) (GSI_REG_BASE_OFFS + \
-					   0x00012404 + 0x4000 * (n))
+					   0x0001f404 + 0x4000 * (n))
 #define HWIO_EE_n_CNTXT_SCRATCH_1_RMSK 0xffffffff
 #define HWIO_EE_n_CNTXT_SCRATCH_1_MAXn 2
 #define HWIO_EE_n_CNTXT_SCRATCH_1_ATTR 0x3

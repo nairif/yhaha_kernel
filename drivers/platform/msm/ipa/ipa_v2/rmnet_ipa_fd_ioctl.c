@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
-/*
- * Copyright (c) 2013-2015, 2018, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2015, 2018, 2020, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/init.h>
@@ -74,7 +81,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		IPAWANDBG("device %s got WAN_IOC_ADD_FLT_RULE :>>>\n",
 		DRIVER_NAME);
 		pyld_sz = sizeof(struct ipa_install_fltr_rule_req_msg_v01);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -99,7 +106,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		IPAWANDBG("device %s got WAN_IOC_ADD_FLT_RULE_INDEX :>>>\n",
 		DRIVER_NAME);
 		pyld_sz = sizeof(struct ipa_fltr_installed_notif_req_msg_v01);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -124,7 +131,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		IPAWANDBG("device %s got WAN_IOC_VOTE_FOR_BW_MBPS :>>>\n",
 		DRIVER_NAME);
 		pyld_sz = sizeof(uint32_t);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -147,7 +154,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WAN_IOC_POLL_TETHERING_STATS:
 		IPAWANDBG_LOW("got WAN_IOCTL_POLL_TETHERING_STATS :>>>\n");
 		pyld_sz = sizeof(struct wan_ioctl_poll_tethering_stats);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -171,7 +178,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WAN_IOC_SET_DATA_QUOTA:
 		IPAWANDBG_LOW("got WAN_IOCTL_SET_DATA_QUOTA :>>>\n");
 		pyld_sz = sizeof(struct wan_ioctl_set_data_quota);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -199,7 +206,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WAN_IOC_SET_TETHER_CLIENT_PIPE:
 		IPAWANDBG_LOW("got WAN_IOC_SET_TETHER_CLIENT_PIPE :>>>\n");
 		pyld_sz = sizeof(struct wan_ioctl_set_tether_client_pipe);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -219,7 +226,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WAN_IOC_QUERY_TETHER_STATS:
 		IPAWANDBG_LOW("got WAN_IOC_QUERY_TETHER_STATS :>>>\n");
 		pyld_sz = sizeof(struct wan_ioctl_query_tether_stats);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -245,7 +252,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WAN_IOC_QUERY_TETHER_STATS_ALL:
 		IPAWANDBG_LOW("got WAN_IOC_QUERY_TETHER_STATS_ALL :>>>\n");
 		pyld_sz = sizeof(struct wan_ioctl_query_tether_stats_all);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -271,7 +278,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WAN_IOC_RESET_TETHER_STATS:
 		IPAWANDBG_LOW("got WAN_IOC_RESET_TETHER_STATS :>>>\n");
 		pyld_sz = sizeof(struct wan_ioctl_reset_tether_stats);
-		param = vmemdup_user((const void __user *)arg, pyld_sz);
+		param = kzalloc(pyld_sz, GFP_KERNEL);
 		if (!param) {
 			retval = -ENOMEM;
 			break;
@@ -292,8 +299,7 @@ static long wan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	default:
 		retval = -ENOTTY;
 	}
-	if (!IS_ERR(param))
-		kvfree(param);
+	kfree(param);
 	return retval;
 }
 

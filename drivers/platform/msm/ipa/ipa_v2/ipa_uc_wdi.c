@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
-/*
- * Copyright (c) 2012-2018, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, 2020, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 #include "ipa_i.h"
 #include <linux/dmapool.h>
@@ -463,7 +470,7 @@ static int ipa_create_uc_smmu_mapping_pa(phys_addr_t pa, size_t len,
 		return -EINVAL;
 	}
 
-	ret = ipa_iommu_map(cb->iommu_domain, va, rounddown(pa, PAGE_SIZE),
+	ret = ipa_iommu_map(cb->mapping->domain, va, rounddown(pa, PAGE_SIZE),
 			true_len,
 			device ? (prot | IOMMU_MMIO) : prot);
 	if (ret) {
@@ -504,7 +511,7 @@ static int ipa_create_uc_smmu_mapping_sgt(struct sg_table *sgt,
 		phys = page_to_phys(sg_page(sg));
 		len = PAGE_ALIGN(sg->offset + sg->length);
 
-		ret = ipa_iommu_map(cb->iommu_domain, va, phys, len, prot);
+		ret = ipa_iommu_map(cb->mapping->domain, va, phys, len, prot);
 		if (ret) {
 			IPAERR("iommu map failed for pa=%pa len=%zu\n",
 					&phys, len);
@@ -521,7 +528,7 @@ static int ipa_create_uc_smmu_mapping_sgt(struct sg_table *sgt,
 
 bad_mapping:
 	for_each_sg(sgt->sgl, sg, count, i)
-		iommu_unmap(cb->iommu_domain, sg_dma_address(sg),
+		iommu_unmap(cb->mapping->domain, sg_dma_address(sg),
 				sg_dma_len(sg));
 	return -EINVAL;
 }
@@ -548,7 +555,7 @@ static void ipa_release_uc_smmu_mappings(enum ipa_client_type client)
 	for (i = start; i <= end; i++) {
 		if (wdi_res[i].valid) {
 			for (j = 0; j < wdi_res[i].nents; j++) {
-				iommu_unmap(cb->iommu_domain,
+				iommu_unmap(cb->mapping->domain,
 					wdi_res[i].res[j].iova,
 					wdi_res[i].res[j].size);
 				ipa_ctx->wdi_map_cnt--;
@@ -649,9 +656,7 @@ int ipa2_create_uc_smmu_mapping(int res_idx, bool wlan_smmu_en,
 	if (wlan_smmu_en && !ipa_ctx->smmu_s1_bypass) {
 		switch (res_idx) {
 		case IPA_WDI_RX_RING_RP_RES:
-		case IPA_WDI_RX_COMP_RING_WP_RES:
 		case IPA_WDI_CE_DB_RES:
-		case IPA_WDI_TX_DB_RES:
 			if (ipa_create_uc_smmu_mapping_pa(pa, len,
 				(res_idx == IPA_WDI_CE_DB_RES) ? true : false,
 				iova)) {
@@ -662,7 +667,6 @@ int ipa2_create_uc_smmu_mapping(int res_idx, bool wlan_smmu_en,
 			ipa_save_uc_smmu_mapping_pa(res_idx, pa, *iova, len);
 			break;
 		case IPA_WDI_RX_RING_RES:
-		case IPA_WDI_RX_COMP_RING_RES:
 		case IPA_WDI_TX_RING_RES:
 		case IPA_WDI_CE_RING_RES:
 			if (ipa_create_uc_smmu_mapping_sgt(sgt, iova)) {
@@ -768,52 +772,51 @@ int ipa2_connect_wdi_pipe(struct ipa_wdi_in_params *in,
 		if (ipa_ctx->ipa_wdi2) {
 			/* WDI2.0 feature */
 			cmd.size = sizeof(*rx_2);
-			if (in->smmu_enabled) {
-				ipa_ctx->uc_ctx.rdy_ring_rp_va =
-					in->u.ul_smmu.rdy_ring_rp_va;
-				ipa_ctx->uc_ctx.rdy_comp_ring_wp_va =
-					in->u.ul_smmu.rdy_comp_ring_wp_va;
-			} else {
-				ipa_ctx->uc_ctx.rdy_ring_rp_va =
-					in->u.ul.rdy_ring_rp_va;
-				ipa_ctx->uc_ctx.rdy_comp_ring_wp_va =
-					in->u.ul.rdy_comp_ring_wp_va;
-			}
+			IPADBG("rdy_ring_rp value =%d\n",
+				*in->u.ul.rdy_ring_rp_va);
+			IPADBG("rx_comp_ring_wp value=%d\n",
+				*in->u.ul.rdy_comp_ring_wp_va);
+			ipa_ctx->uc_ctx.rdy_ring_rp_va =
+				in->u.ul.rdy_ring_rp_va;
+			ipa_ctx->uc_ctx.rdy_comp_ring_wp_va =
+				in->u.ul.rdy_comp_ring_wp_va;
 		} else {
 			cmd.size = sizeof(*rx);
 		}
+		IPADBG("rx_ring_base_pa=0x%pa\n",
+			&in->u.ul.rdy_ring_base_pa);
+		IPADBG("rx_ring_size=%d\n",
+			in->u.ul.rdy_ring_size);
+		IPADBG("rx_ring_rp_pa=0x%pa\n",
+			&in->u.ul.rdy_ring_rp_pa);
 
-		if (in->smmu_enabled) {
-			ipa_ctx->uc_ctx.rdy_ring_rp_pa =
-				in->u.ul_smmu.rdy_ring_rp_pa;
-			ipa_ctx->uc_ctx.rdy_ring_size =
-				in->u.ul_smmu.rdy_ring_size;
-			ipa_ctx->uc_ctx.rdy_comp_ring_wp_pa =
-				in->u.ul_smmu.rdy_comp_ring_wp_pa;
-			ipa_ctx->uc_ctx.rdy_comp_ring_size =
-				in->u.ul_smmu.rdy_comp_ring_size;
-		} else {
-			ipa_ctx->uc_ctx.rdy_ring_base_pa =
-				in->u.ul.rdy_ring_base_pa;
-			ipa_ctx->uc_ctx.rdy_ring_rp_pa =
-				in->u.ul.rdy_ring_rp_pa;
-			ipa_ctx->uc_ctx.rdy_ring_size =
-				in->u.ul.rdy_ring_size;
-			ipa_ctx->uc_ctx.rdy_comp_ring_base_pa =
-				in->u.ul.rdy_comp_ring_base_pa;
-			ipa_ctx->uc_ctx.rdy_comp_ring_wp_pa =
-				in->u.ul.rdy_comp_ring_wp_pa;
-			ipa_ctx->uc_ctx.rdy_comp_ring_size =
-				in->u.ul.rdy_comp_ring_size;
-		}
+		IPADBG("rx_comp_ring_base_pa=0x%pa\n",
+			&in->u.ul.rdy_comp_ring_base_pa);
+		IPADBG("rx_comp_ring_size=%d\n",
+			in->u.ul.rdy_comp_ring_size);
+		IPADBG("rx_comp_ring_wp_pa=0x%pa\n",
+			&in->u.ul.rdy_comp_ring_wp_pa);
+
+		ipa_ctx->uc_ctx.rdy_ring_base_pa =
+			in->u.ul.rdy_ring_base_pa;
+		ipa_ctx->uc_ctx.rdy_ring_rp_pa =
+			in->u.ul.rdy_ring_rp_pa;
+		ipa_ctx->uc_ctx.rdy_ring_size =
+			in->u.ul.rdy_ring_size;
+		ipa_ctx->uc_ctx.rdy_comp_ring_base_pa =
+			in->u.ul.rdy_comp_ring_base_pa;
+		ipa_ctx->uc_ctx.rdy_comp_ring_wp_pa =
+			in->u.ul.rdy_comp_ring_wp_pa;
+		ipa_ctx->uc_ctx.rdy_comp_ring_size =
+			in->u.ul.rdy_comp_ring_size;
 
 		/* check if the VA is empty */
-		if (!ipa_ctx->uc_ctx.rdy_ring_rp_va && ipa_ctx->ipa_wdi2) {
+		if (!in->u.ul.rdy_ring_rp_va && ipa_ctx->ipa_wdi2) {
 			IPAERR("rdy_ring_rp_va is empty, wdi2.0(%d)\n",
 				ipa_ctx->ipa_wdi2);
 				goto dma_alloc_fail;
 		}
-		if (!ipa_ctx->uc_ctx.rdy_comp_ring_wp_va && ipa_ctx->ipa_wdi2) {
+		if (!in->u.ul.rdy_comp_ring_wp_va && ipa_ctx->ipa_wdi2) {
 			IPAERR("comp_ring_wp_va is empty, wdi2.0(%d)\n",
 				ipa_ctx->ipa_wdi2);
 				goto dma_alloc_fail;
@@ -1655,7 +1658,7 @@ int ipa2_broadcast_wdi_quota_reach_ind(uint32_t fid,
 {
 	IPAERR("Quota reached indication on fis(%d) Mbytes(%lu)\n",
 			  fid,
-			  (unsigned long) num_bytes);
+			  (unsigned long int) num_bytes);
 	ipa_broadcast_quota_reach_ind(0, IPA_UPSTEAM_WLAN);
 	return 0;
 }
@@ -1856,7 +1859,7 @@ int ipa2_create_wdi_mapping(u32 num_buffers, struct ipa_wdi_buffer_info *info)
 	for (i = 0; i < num_buffers; i++) {
 		IPADBG("i=%d pa=0x%pa iova=0x%lx sz=0x%zx\n", i,
 			&info[i].pa, info[i].iova, info[i].size);
-		info[i].result = ipa_iommu_map(cb->iommu_domain,
+		info[i].result = ipa_iommu_map(cb->iommu,
 			rounddown(info[i].iova, PAGE_SIZE),
 			rounddown(info[i].pa, PAGE_SIZE),
 			roundup(info[i].size + info[i].pa -
@@ -1886,7 +1889,7 @@ int ipa2_release_wdi_mapping(u32 num_buffers, struct ipa_wdi_buffer_info *info)
 	for (i = 0; i < num_buffers; i++) {
 		IPADBG("i=%d pa=0x%pa iova=0x%lx sz=0x%zx\n", i,
 			&info[i].pa, info[i].iova, info[i].size);
-		info[i].result = iommu_unmap(cb->iommu_domain,
+		info[i].result = iommu_unmap(cb->iommu,
 			rounddown(info[i].iova, PAGE_SIZE),
 			roundup(info[i].size + info[i].pa -
 				rounddown(info[i].pa, PAGE_SIZE), PAGE_SIZE));

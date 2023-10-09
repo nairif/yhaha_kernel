@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
-/*
- * Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/ipa.h>
@@ -97,38 +104,12 @@
 
 #if defined(CONFIG_IPA_EMULATION)
 static bool running_emulation = true;
-#elif defined(CONFIG_PCI)
+#else
 static bool running_emulation;
 #endif
 
 static enum ipa_hw_type ipa_api_hw_type;
 static struct ipa_api_controller *ipa_api_ctrl;
-
-#define MAX_CPY_BUFF_SZ		4096
-unsigned long
-ipa_safe_copy_from_user(char *dst, const char __user *buf, size_t count)
-{
-	unsigned long missing = 0;
-	char *from_user = NULL;
-	int sz;
-
-	if (MAX_CPY_BUFF_SZ < count + 1)
-		return ULONG_MAX;
-
-	sz = count * sizeof(char);
-	from_user = kmalloc(sz + 1, GFP_KERNEL);
-	if (!from_user)
-		return ULONG_MAX;
-
-	missing = copy_from_user(from_user, buf, count);
-	if (missing)
-		goto end;
-
-	memcpy(dst, from_user, sz);
-end:
-	kfree(from_user);
-	return missing;
-}
 
 const char *ipa_clients_strings[IPA_CLIENT_MAX] = {
 	__stringify(IPA_CLIENT_HSIC1_PROD),
@@ -217,23 +198,34 @@ const char *ipa_clients_strings[IPA_CLIENT_MAX] = {
 	__stringify(IPA_CLIENT_ODL_DPL_CONS),
 	__stringify(IPA_CLIENT_Q6_AUDIO_DMA_MHI_PROD),
 	__stringify(IPA_CLIENT_Q6_AUDIO_DMA_MHI_CONS),
+	__stringify(RESERVED_PROD_86),
+	__stringify(IPA_CLIENT_APPS_WAN_COAL_CONS),
 	__stringify(IPA_CLIENT_WIGIG_PROD),
 	__stringify(IPA_CLIENT_WIGIG1_CONS),
-	__stringify(RESERVERD_PROD_88),
-	__stringify(IPA_CLIENT_WIGIG2_CONS),
 	__stringify(RESERVERD_PROD_90),
-	__stringify(IPA_CLIENT_WIGIG3_CONS),
+	__stringify(IPA_CLIENT_WIGIG2_CONS),
 	__stringify(RESERVERD_PROD_92),
-	__stringify(IPA_CLIENT_WIGIG4_CONS),
+	__stringify(IPA_CLIENT_WIGIG3_CONS),
 	__stringify(RESERVERD_PROD_94),
-	__stringify(IPA_CLIENT_APPS_WAN_COAL_CONS),
+	__stringify(IPA_CLIENT_WIGIG4_CONS),
+	__stringify(IPA_CLIENT_AQC_ETHERNET_PROD),
+	__stringify(IPA_CLIENT_AQC_ETHERNET_CONS),
 	__stringify(IPA_CLIENT_MHI_PRIME_RMNET_PROD),
 	__stringify(IPA_CLIENT_MHI_PRIME_RMNET_CONS),
 	__stringify(IPA_CLIENT_MHI_PRIME_TETH_PROD),
 	__stringify(IPA_CLIENT_MHI_PRIME_TETH_CONS),
 	__stringify(IPA_CLIENT_MHI_PRIME_DPL_PROD),
-	__stringify(IPA_CLIENT_AQC_ETHERNET_PROD),
-	__stringify(IPA_CLIENT_AQC_ETHERNET_CONS),
+	__stringify(RESERVERD_CONS_103),
+	__stringify(IPA_CLIENT_MHI2_PROD),
+	__stringify(IPA_CLIENT_MHI2_CONS),
+	__stringify(IPA_CLIENT_Q6_CV2X_PROD),
+	__stringify(IPA_CLIENT_Q6_CV2X_CONS),
+	__stringify(IPA_CLIENT_MHI_LOW_LAT_PROD),
+	__stringify(IPA_CLIENT_MHI_LOW_LAT_CONS),
+	__stringify(IPA_CLIENT_QDSS_PROD),
+	__stringify(IPA_CLIENT_MHI_QDSS_CONS),
+	__stringify(IPA_CLIENT_ETHERNET2_PROD),
+	__stringify(IPA_CLIENT_ETHERNET2_CONS),
 };
 
 /**
@@ -373,6 +365,8 @@ int ipa_smmu_store_sgt(struct sg_table **out_ch_ptr,
 	struct sg_table *in_sgt_ptr)
 {
 	unsigned int nents;
+	int i;
+	struct scatterlist *in_sg, *out_sg;
 
 	if (in_sgt_ptr != NULL) {
 		*out_ch_ptr = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
@@ -390,8 +384,12 @@ int ipa_smmu_store_sgt(struct sg_table **out_ch_ptr,
 			return -ENOMEM;
 		}
 
-		memcpy((*out_ch_ptr)->sgl, in_sgt_ptr->sgl,
-			nents*sizeof((*out_ch_ptr)->sgl));
+		out_sg = (*out_ch_ptr)->sgl;
+		for_each_sg(in_sgt_ptr->sgl, in_sg, in_sgt_ptr->nents, i) {
+			memcpy(out_sg, in_sg, sizeof(struct scatterlist));
+			out_sg++;
+		}
+
 		(*out_ch_ptr)->nents = nents;
 		(*out_ch_ptr)->orig_nents = in_sgt_ptr->orig_nents;
 	}
@@ -2073,43 +2071,6 @@ int ipa_get_wdi_stats(struct IpaHwStatsWDIInfoData_t *stats)
 EXPORT_SYMBOL(ipa_get_wdi_stats);
 
 /**
- * ipa_uc_bw_monitor() - start uc bw monitoring
- * @info:	[inout] set info populated by driver
- *
- * Returns:	0 on success, negative on failure
- *
- * @note Cannot be called from atomic context
- *
- */
-int ipa_uc_bw_monitor(struct ipa_wdi_bw_info *info)
-{
-	int ret;
-
-	IPA_API_DISPATCH_RETURN(ipa_uc_bw_monitor, info);
-
-	return ret;
-}
-EXPORT_SYMBOL(ipa_uc_bw_monitor);
-
-/**
- * ipa_set_wlan_tx_info() -set WDI statistics from uc
- * @info:	[inout] set info populated by driver
- *
- * Returns:	0 on success, negative on failure
- *
- * @note Cannot be called from atomic context
- *
- */
-int ipa_set_wlan_tx_info(struct ipa_wdi_tx_info *info)
-{
-	int ret;
-
-	IPA_API_DISPATCH_RETURN(ipa_set_wlan_tx_info, info);
-
-	return ret;
-}
-EXPORT_SYMBOL(ipa_set_wlan_tx_info);
-/**
  * ipa_get_smem_restr_bytes()- Return IPA smem restricted bytes
  *
  * Return value: u16 - number of IPA smem restricted bytes
@@ -2184,29 +2145,29 @@ int ipa_uc_reg_rdyCB(
 EXPORT_SYMBOL(ipa_uc_reg_rdyCB);
 
 /**
-* ipa_wigig_internal_init() - get uc db and register uC
+* ipa_wigig_uc_init() - get uc db and register uC
 * ready CB if uC not ready, wigig only.
 * @inout:	[in/out] uc ready input/output parameters
 * from/to client
 * @int_notify: [in] wigig misc interrupt handler function
-* @uc_db_pa: [out] uC db physical address
 *
 * Returns:	0 on success, negative on failure
 *
 */
-int ipa_wigig_internal_init(
+
+int ipa_wigig_uc_init(
 	struct ipa_wdi_uc_ready_params *inout,
 	ipa_wigig_misc_int_cb int_notify,
 	phys_addr_t *uc_db_pa)
 {
 	int ret;
 
-	IPA_API_DISPATCH_RETURN(ipa_wigig_internal_init, inout,
+	IPA_API_DISPATCH_RETURN(ipa_wigig_uc_init, inout,
 		int_notify, uc_db_pa);
 
 	return ret;
 }
-EXPORT_SYMBOL(ipa_wigig_internal_init);
+EXPORT_SYMBOL(ipa_wigig_uc_init);
 
 /**
  * ipa_uc_dereg_rdyCB() - To de-register uC ready CB
@@ -2666,13 +2627,14 @@ bool ipa_has_open_aggr_frame(enum ipa_client_type client)
 
 int ipa_mhi_resume_channels_internal(enum ipa_client_type client,
 		bool LPTransitionRejected, bool brstmode_enabled,
-		union __packed gsi_channel_scratch ch_scratch, u8 index)
+		union gsi_channel_scratch ch_scratch, u8 index,
+		bool is_switch_to_dbmode)
 {
 	int ret;
 
 	IPA_API_DISPATCH_RETURN(ipa_mhi_resume_channels_internal, client,
 			LPTransitionRejected, brstmode_enabled, ch_scratch,
-			index);
+			index, is_switch_to_dbmode);
 
 	return ret;
 }
@@ -3160,9 +3122,6 @@ const char *ipa_get_version_string(enum ipa_hw_type ver)
 	case IPA_HW_v4_5:
 		str = "4.5";
 		break;
-	case IPA_HW_v4_7:
-		str = "4.7";
-		break;
 	default:
 		str = "Invalid version";
 		break;
@@ -3177,7 +3136,6 @@ static const struct of_device_id ipa_plat_drv_match[] = {
 	{ .compatible = "qcom,ipa-smmu-ap-cb", },
 	{ .compatible = "qcom,ipa-smmu-wlan-cb", },
 	{ .compatible = "qcom,ipa-smmu-uc-cb", },
-	{ .compatible = "qcom,ipa-smmu-11ad-cb", },
 	{ .compatible = "qcom,smp2p-map-ipa-1-in", },
 	{ .compatible = "qcom,smp2p-map-ipa-1-out", },
 	{}
@@ -3187,7 +3145,6 @@ static const struct of_device_id ipa_plat_drv_match[] = {
 /*                PCIe Version                           */
 /*********************************************************/
 
-#ifdef CONFIG_PCI
 static const struct of_device_id ipa_pci_drv_match[] = {
 	{ .compatible = "qcom,ipa", },
 	{}
@@ -3234,7 +3191,6 @@ static struct pci_driver ipa_pci_driver = {
 	.shutdown = ipa_pci_shutdown,
 	.err_handler = &ipa_pci_err_handler
 };
-#endif
 
 static int ipa_generic_plat_drv_probe(struct platform_device *pdev_p)
 {
@@ -3261,7 +3217,7 @@ static int ipa_generic_plat_drv_probe(struct platform_device *pdev_p)
 			ipa_api_ctrl = 0;
 			return -ENODEV;
 		}
-		pr_debug("ipa: ipa_api_hw_type = %d\n", ipa_api_hw_type);
+		pr_debug("ipa: ipa_api_hw_type = %d", ipa_api_hw_type);
 	}
 
 	/* call probe based on IPA HW version */
@@ -3278,7 +3234,6 @@ static int ipa_generic_plat_drv_probe(struct platform_device *pdev_p)
 	case IPA_HW_v4_1:
 	case IPA_HW_v4_2:
 	case IPA_HW_v4_5:
-	case IPA_HW_v4_7:
 		result = ipa3_plat_drv_probe(pdev_p, ipa_api_ctrl,
 			ipa_plat_drv_match);
 		break;
@@ -3646,6 +3601,52 @@ int ipa_disable_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 	return ret;
 }
 
+
+/**
+ * ipa_add_socksv5_conn()- Add socksv5 entry in IPA
+ *
+ * Return value: 0 on success, negative otherwise
+ */
+int ipa_add_socksv5_conn(struct ipa_socksv5_info *info)
+{
+	int ret;
+
+	IPA_API_DISPATCH_RETURN(ipa_add_socksv5_conn, info);
+
+	return ret;
+}
+EXPORT_SYMBOL(ipa_add_socksv5_conn);
+
+
+/**
+ * ipa_del_socksv5_conn()- Del socksv5 entry in IPA
+ *
+ * Return value: 0 on success, negative otherwise
+ */
+int ipa_del_socksv5_conn(uint32_t handle)
+{
+	int ret;
+
+	IPA_API_DISPATCH_RETURN(ipa_del_socksv5_conn, handle);
+
+	return ret;
+}
+EXPORT_SYMBOL(ipa_del_socksv5_conn);
+
+
+/**
+ * ipa_get_lan_rx_napi() - returns if NAPI is enabled in LAN RX
+ */
+bool ipa_get_lan_rx_napi(void)
+{
+	bool ret;
+
+	IPA_API_DISPATCH_RETURN_BOOL(ipa_get_lan_rx_napi);
+
+	return ret;
+}
+EXPORT_SYMBOL(ipa_get_lan_rx_napi);
+
 /**
  * ipa_wigig_uc_msi_init() - smmu map\unmap msi related wigig HW registers
  *	and init\deinit uC msi config
@@ -3673,12 +3674,11 @@ EXPORT_SYMBOL(ipa_wigig_uc_msi_init);
 /**
  * ipa_conn_wigig_rx_pipe_i() - connect wigig rx pipe
  */
-int ipa_conn_wigig_rx_pipe_i(void *in, struct ipa_wigig_conn_out_params *out,
-	struct dentry **parent)
+int ipa_conn_wigig_rx_pipe_i(void *in, struct ipa_wigig_conn_out_params *out)
 {
 	int ret;
 
-	IPA_API_DISPATCH_RETURN(ipa_conn_wigig_rx_pipe_i, in, out, parent);
+	IPA_API_DISPATCH_RETURN(ipa_conn_wigig_rx_pipe_i, in, out);
 
 	return ret;
 }
@@ -3687,15 +3687,11 @@ EXPORT_SYMBOL(ipa_conn_wigig_rx_pipe_i);
 /**
  * ipa_conn_wigig_client_i() - connect a wigig client
  */
-int ipa_conn_wigig_client_i(void *in,
-	struct ipa_wigig_conn_out_params *out,
-	ipa_notify_cb tx_notify,
-	void *priv)
+int ipa_conn_wigig_client_i(void *in, struct ipa_wigig_conn_out_params *out)
 {
 	int ret;
 
-	IPA_API_DISPATCH_RETURN(ipa_conn_wigig_client_i, in, out,
-		tx_notify, priv);
+	IPA_API_DISPATCH_RETURN(ipa_conn_wigig_client_i, in, out);
 
 	return ret;
 }
@@ -3742,19 +3738,6 @@ int ipa_disable_wigig_pipe_i(enum ipa_client_type client)
 	return ret;
 }
 EXPORT_SYMBOL(ipa_disable_wigig_pipe_i);
-
-/**
- * ipa_get_lan_rx_napi() - returns if NAPI is enabled in LAN RX
- */
-bool ipa_get_lan_rx_napi(void)
-{
-	bool ret;
-
-	IPA_API_DISPATCH_RETURN_BOOL(ipa_get_lan_rx_napi);
-
-	return ret;
-}
-EXPORT_SYMBOL(ipa_get_lan_rx_napi);
 
 /**
  * ipa_tz_unlock_reg() - Allow AP access to memory regions controlled by TZ
@@ -3834,15 +3817,43 @@ bool ipa_pm_is_used(void)
 	return ret;
 }
 
+/**
+ * ipa_conn_qdss_pipes() - connect qdss pipes
+ */
+int ipa_qdss_conn_pipes(struct ipa_qdss_conn_in_params *in,
+	struct ipa_qdss_conn_out_params *out)
+{
+	int ret;
+
+	IPA_API_DISPATCH_RETURN(ipa_conn_qdss_pipes, in, out);
+
+	return ret;
+}
+EXPORT_SYMBOL(ipa_qdss_conn_pipes);
+
+/**
+ * ipa_disconn_qdss_pipes() - disconnect qdss pipes
+ */
+int ipa_qdss_disconn_pipes(void)
+{
+	int ret;
+
+	IPA_API_DISPATCH_RETURN(ipa_disconn_qdss_pipes);
+
+	return ret;
+}
+EXPORT_SYMBOL(ipa_qdss_disconn_pipes);
+
 static const struct dev_pm_ops ipa_pm_ops = {
-	.suspend_late = ipa_ap_suspend,
-	.resume_early = ipa_ap_resume,
+	.suspend_noirq = ipa_ap_suspend,
+	.resume_noirq = ipa_ap_resume,
 };
 
 static struct platform_driver ipa_plat_drv = {
 	.probe = ipa_generic_plat_drv_probe,
 	.driver = {
 		.name = DRV_NAME,
+		.owner = THIS_MODULE,
 		.pm = &ipa_pm_ops,
 		.of_match_table = ipa_plat_drv_match,
 	},
@@ -3852,7 +3863,6 @@ static struct platform_driver ipa_plat_drv = {
 /*                PCIe Version                           */
 /*********************************************************/
 
-#ifdef CONFIG_PCI
 static int ipa_pci_probe(
 	struct pci_dev             *pci_dev,
 	const struct pci_device_id *ent)
@@ -3879,7 +3889,7 @@ static int ipa_pci_probe(
 			ipa_api_ctrl = NULL;
 			return -ENODEV;
 		}
-		pr_debug("ipa: ipa_api_hw_type = %d\n", ipa_api_hw_type);
+		pr_debug("ipa: ipa_api_hw_type = %d", ipa_api_hw_type);
 	}
 
 	/*
@@ -3920,17 +3930,15 @@ static pci_ers_result_t ipa_pci_io_slot_reset(struct pci_dev *pci_dev)
 static void ipa_pci_io_resume(struct pci_dev *pci_dev)
 {
 }
-#endif
 
 static int __init ipa_module_init(void)
 {
 	pr_debug("IPA module init\n");
-#ifdef CONFIG_PCI
+
 	if (running_emulation) {
 		/* Register as a PCI device driver */
 		return pci_register_driver(&ipa_pci_driver);
 	}
-#endif
 	/* Register as a platform device driver */
 	return platform_driver_register(&ipa_plat_drv);
 }
