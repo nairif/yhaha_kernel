@@ -179,8 +179,8 @@ enum log_level_list;
 
 #define LOGE(X, ...) LOGx(pr_err, LEVEL_DEFAULT, X, ## __VA_ARGS__)
 #define LOGW(X, ...) LOGx(pr_warn, LEVEL_DEFAULT, X, ## __VA_ARGS__)
-#define LOGN(X, ...) LOGx(pr_notice, LEVEL_DEBUG, X, ## __VA_ARGS__)
-#define LOGI(X, ...) LOGx(pr_notice, LEVEL_ALL, X, ## __VA_ARGS__)
+#define LOGN(X, ...) LOGx(pr_notice, LEVEL_DEFAULT, X, ## __VA_ARGS__)
+#define LOGI(X, ...) LOGx(pr_notice, LEVEL_DEBUG, X, ## __VA_ARGS__)
 #define LOGD(X, ...) LOGx(pr_notice, LEVEL_ALL, X, ## __VA_ARGS__)
 
 #define TOUCH_PATCH_INFO_MSG(fmt, args...)	pr_info("[Solomon Patch] " fmt, ##args)
@@ -646,10 +646,12 @@ struct mxt_driver_data {
 	int usb_type;
 	int factory_boot;
 
+#if defined(CONFIG_TOUCHSCREEN_LGE_LPWG)
 	struct tci_abs tci_press[MAX_POINT_SIZE_FOR_LPWG];
 	struct tci_abs tci_report[MAX_POINT_SIZE_FOR_LPWG];
 
 	struct workqueue_struct* touch_multi_tap_wq;
+#endif
 };
 
 /* The platform data for the Atmel maXTouch touchscreen driver */
@@ -1129,7 +1131,7 @@ struct mxt_data {
 	int x_zitter;
 	int y_zitter;
 
-	u8 pm_state;
+	atomic_t pm_state;
 	u8 pen_support;
 
 	int self_cap;
@@ -1151,6 +1153,7 @@ struct mxt_data {
 	bool first_unblank;
 	bool wireless_charge;
 	bool landscape;
+	bool forcesleep;
 
 	u8 register_value;
 
